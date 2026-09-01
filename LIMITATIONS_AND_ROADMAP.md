@@ -12,11 +12,11 @@ This document provides a technical audit of the current prototype, identifying w
 | **SAR AI Model** | ✅ PyTorch U-Net with trained `.pt` weights on sliding-window tiles | Scaled multi-GPU distributed inference across Sentinel-1 archives | 🟢 Resolved |
 | **Raw SAR Ingestion** | ✅ 16-bit GeoTIFF parser (`rasterio`), 5x5 Lee speckle filter & WGS84 vectorizer | Direct ESA Copernicus Hub S1 `.SAFE` auto-downloader | 🟢 Resolved |
 | **Dark Vessel Detection** | ✅ 2D CA-CFAR radar detector + AIS cross-matcher (flags AIS-evaders) | Multi-spectral infrared & optical satellite constellation fusion | 🟢 Resolved |
-| **Ocean Drift Physics** | Static 2D Lagrangian leeway model ($\alpha=3.2\%$) | Dynamic 4D gridded current/wind fields (CMEMS / NOAA GFS) | 🟢 Low (Demo ok) |
-| **Oil Weathering** | Volume estimation via Bonn thickness | Dynamic evaporation, emulsification & Fay spreading equations | 🟢 Low (Demo ok) |
-| **Forward Landfall** | Reverse origin backtrack only | Forward 72-hour drift projection with Coastal Landfall ETA | 🔴 High Impact |
+| **Ocean Drift Physics** | ✅ Dynamic spatio-temporal M2 tidal oscillation & diurnal wind vectors | Live Copernicus CMEMS NetCDF/GRIB2 automated data sync | 🟢 Resolved |
+| **Oil Weathering** | ✅ Stiver-Friesen evaporation, mousse emulsification & Fay spreading | Multi-fraction distillation curve chemical laboratory validation | 🟢 Resolved |
+| **Forward Landfall** | ✅ Forward 72-hour Lagrangian drift forecast & Coastal Landfall ETA | Automated Coast Guard satellite SMS alerting dispatch | 🟢 Resolved |
 | **AIS Ingestion & DB** | In-memory spatial scenarios & Python Haversine math | PostgreSQL + PostGIS with GIST indexing & live AISStream WebSockets | 🟡 Medium |
-| **UI Custom Input** | ✅ 3 Scenarios + Interactive "Run GeoTIFF + CFAR" processor in UI | Drag-and-drop satellite image upload & custom AIS file ingestion | 🟡 Medium |
+| **UI Custom Input** | ✅ 3 Scenarios + "Run GeoTIFF + CFAR" + "72h Landfall & Weathering" in UI | Drag-and-drop satellite image upload & custom AIS file ingestion | 🟡 Medium |
 | **Dossier Export** | Markdown rendering with browser print | Direct binary PDF export with embedded maps & SHA-256 seal | 🟡 Medium |
 | **Deployment** | Python virtual environment with PyTorch & Rasterio | Dockerized multi-container stack (`docker-compose.yml`) | 🟢 Low |
 

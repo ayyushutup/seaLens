@@ -16,6 +16,9 @@ from backend.services.report_generator import generate_markdown_dossier
 from backend.services.drift_engine import DriftEngine
 from backend.services.correlation_engine import AISCorrelationEngine
 from backend.services.dark_vessel_engine import DarkVesselEngine
+from backend.services.ocean_grid_engine import DynamicOceanGridEngine
+from backend.services.weathering_engine import OilWeatheringEngine
+from backend.services.landfall_predictor import CoastalLandfallPredictor
 from ml_engine.sar_detector import SAROilSpillDetector
 from ml_engine.geotiff_processor import GeoTIFFProcessor
 from ml_engine.cfar_ship_detector import CACFARShipDetector
@@ -43,6 +46,8 @@ sar_detector = SAROilSpillDetector()
 geotiff_processor = GeoTIFFProcessor()
 cfar_detector = CACFARShipDetector()
 dark_vessel_engine = DarkVesselEngine()
+weathering_engine = OilWeatheringEngine()
+landfall_predictor = CoastalLandfallPredictor()
 
 # Pre-load PyTorch U-Net weights if available
 unet_model = SAROilSpillUNet(in_channels=1, num_classes=1)
@@ -204,6 +209,54 @@ def get_drift_simulation_steps(scenario_id: str):
         "scenario_id": scenario_id,
         "elapsed_hours": elapsed_hours,
         "drift_trajectory": points
+    }
+
+@app.get("/api/forward_drift/{scenario_id}")
+def get_forward_drift_forecast(scenario_id: str):
+    """
+    Simulates forward Lagrangian drift over 72 hours, computing coastal landfall ETA,
+    ecological threat level, and emergency containment boom recommendations.
+    """
+    if scenario_id not in SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
+    sc = SCENARIOS[scenario_id]
+    primary_slick = sc.slicks[0] if sc.slicks else None
+    if not primary_slick:
+        raise HTTPException(status_code=400, detail="No detected slicks in scenario")
+
+    forecast = landfall_predictor.simulate_forward_drift_72h(
+        start_lat=primary_slick.centroid.lat,
+        start_lng=primary_slick.centroid.lng,
+        initial_volume_m3=primary_slick.estimated_volume_m3,
+        base_wind_speed=sc.environmental.wind_speed_ms,
+        base_wind_deg=sc.environmental.wind_direction_deg,
+        base_current_speed=sc.environmental.current_speed_ms,
+        base_current_deg=sc.environmental.current_direction_deg,
+        start_time_iso=sc.sar_image.acquisition_time
+    )
+    return forecast
+
+@app.get("/api/weathering_simulation/{scenario_id}")
+def get_weathering_timeline(scenario_id: str):
+    """
+    Returns 72-hour petroleum weathering degradation curve:
+    evaporation %, emulsification water uptake %, dynamic viscosity (cP), and Fay spreading area.
+    """
+    if scenario_id not in SCENARIOS:
+        raise HTTPException(status_code=404, detail=f"Scenario '{scenario_id}' not found")
+    sc = SCENARIOS[scenario_id]
+    primary_slick = sc.slicks[0] if sc.slicks else None
+    init_vol = primary_slick.estimated_volume_m3 if primary_slick else 15.0
+    
+    timeline = weathering_engine.generate_72h_weathering_curve(
+        initial_volume_m3=init_vol,
+        wind_speed_ms=sc.environmental.wind_speed_ms,
+        surface_temp_c=sc.environmental.surface_temp_c
+    )
+    return {
+        "scenario_id": scenario_id,
+        "initial_volume_m3": init_vol,
+        "timeline": timeline
     }
 
 # Mount static frontend files if directory exists

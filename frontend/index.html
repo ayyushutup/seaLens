@@ -678,7 +678,7 @@
       activeMarkers = [];
     }
 
-    // Helper to generate circle GeoJSON polygon for buffer rings
+    // Helper to generate circle GeoJSON LineString for clean buffer rings
     function createGeoJSONCircle(center, radiusInKm, points = 64) {
       const coords = { latitude: center[1], longitude: center[0] };
       const km = radiusInKm;
@@ -696,7 +696,7 @@
       ret.push(ret[0]);
       return {
         "type": "Feature",
-        "geometry": { "type": "Polygon", "coordinates": [ret] },
+        "geometry": { "type": "LineString", "coordinates": ret },
         "properties": { "radius_km": radiusInKm }
       };
     }
@@ -823,31 +823,16 @@
           source: 'particles-src',
           paint: {
             'line-color': '#14B8A6',
-            'line-width': 2,
-            'line-opacity': ['get', 'opacity']
-          }
-        });
-        map.addLayer({
-          id: 'particles-layer-point',
-          type: 'circle',
-          source: 'particles-src',
-          paint: {
-            'circle-radius': ['get', 'size'],
-            'circle-color': '#00F0FF',
-            'circle-opacity': ['get', 'opacity'],
-            'circle-blur': 0.2
+            'line-width': 2.5,
+            'line-dasharray': [3, 3]
           }
         });
       }
     }
 
-    // Particle Vector Animation Engine
-    let particles = [];
-    let particleAnimationId = null;
-
-    function initParticles(centerLng, centerLat, currentDeg = 45, currentSpeed = 0.45, windDeg = 225, windSpeed = 6.2) {
-      particles = [];
-      const numParticles = 60;
+    // Ocean Drift Vector Streamline Generator (Clean Stationary Flow Vectors)
+    function renderOceanVectorStreamlines(centerLng, centerLat, currentDeg = 45, currentSpeed = 0.45, windDeg = 225, windSpeed = 6.2) {
+      if (!map || !map.getSource('particles-src')) return;
 
       const currentRad = (currentDeg * Math.PI) / 180.0;
       const windRad = (windDeg * Math.PI) / 180.0;
@@ -856,63 +841,36 @@
       const vectorDx = Math.sin(currentRad) * currentSpeed + 0.03 * Math.sin(windRad) * windSpeed;
       const vectorDy = Math.cos(currentRad) * currentSpeed + 0.03 * Math.cos(windRad) * windSpeed;
 
-      for (let i = 0; i < numParticles; i++) {
-        const offsetX = (Math.random() - 0.5) * 0.35;
-        const offsetY = (Math.random() - 0.5) * 0.35;
-        particles.push({
-          lng: centerLng + offsetX,
-          lat: centerLat + offsetY,
-          originLng: centerLng + offsetX,
-          originLat: centerLat + offsetY,
-          life: Math.random() * 100,
-          maxLife: 80 + Math.random() * 60,
-          speedMult: 0.0003 + Math.random() * 0.0004,
-          dx: vectorDx,
-          dy: vectorDy,
-          size: 2.5 + Math.random() * 3.5
-        });
-      }
+      const scale = 0.04;
+      const vectorFeatures = [];
 
-      if (particleAnimationId) cancelAnimationFrame(particleAnimationId);
-      animateParticles();
-    }
+      // Grid of 9 vector streamlines around the scene
+      const offsets = [
+        [-0.08, -0.08], [0.0, -0.08], [0.08, -0.08],
+        [-0.08, 0.0],   [0.0, 0.0],   [0.08, 0.0],
+        [-0.08, 0.08],  [0.0, 0.08],  [0.08, 0.08]
+      ];
 
-    function animateParticles() {
-      if (!map || !map.getSource('particles-src')) {
-        particleAnimationId = requestAnimationFrame(animateParticles);
-        return;
-      }
+      offsets.forEach(([ox, oy]) => {
+        const startLng = centerLng + ox;
+        const startLat = centerLat + oy;
+        const endLng = startLng + vectorDx * scale;
+        const endLat = startLat + vectorDy * scale;
 
-      const particleFeatures = [];
-      particles.forEach(p => {
-        p.life += 1;
-        p.lng += p.dx * p.speedMult;
-        p.lat += p.dy * p.speedMult;
-
-        const opacity = Math.sin((p.life / p.maxLife) * Math.PI);
-
-        if (p.life >= p.maxLife) {
-          p.life = 0;
-          p.lng = p.originLng;
-          p.lat = p.originLat;
-        }
-
-        const tailLng = p.lng - p.dx * p.speedMult * 8;
-        const tailLat = p.lat - p.dy * p.speedMult * 8;
-
-        particleFeatures.push({
+        vectorFeatures.push({
           "type": "Feature",
-          "geometry": { "type": "LineString", "coordinates": [[tailLng, tailLat], [p.lng, p.lat]] },
-          "properties": { "size": p.size, "opacity": Math.max(0.1, opacity) }
+          "geometry": {
+            "type": "LineString",
+            "coordinates": [[startLng, startLat], [endLng, endLat]]
+          },
+          "properties": {}
         });
       });
 
       map.getSource('particles-src').setData({
         "type": "FeatureCollection",
-        "features": particleFeatures
+        "features": vectorFeatures
       });
-
-      particleAnimationId = requestAnimationFrame(animateParticles);
     }
 
     // Initialize Mapbox vector sources & layers when map loads or changes style
@@ -1209,8 +1167,8 @@
           map.getSource('buffers-src').setData({ type: 'FeatureCollection', features: bufferFeatures });
         }
 
-        // Initialize Animated Ocean Drift Vectors
-        initParticles(
+        // Render Ocean Drift Vector Streamlines
+        renderOceanVectorStreamlines(
           cLng,
           cLat,
           data.environmental?.current_direction_deg || 45,

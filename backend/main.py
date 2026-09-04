@@ -1,5 +1,5 @@
 """
-Maritime Sentinel: Oil Spill Detection & AIS Vessel Correlation System.
+seaLens: Oil Spill Detection & AIS Vessel Correlation System.
 FastAPI Main Application and REST API Endpoints.
 """
 import os
@@ -26,7 +26,7 @@ from ml_engine.unet_model import SAROilSpillUNet
 import torch
 
 app = FastAPI(
-    title="Maritime Sentinel API",
+    title="seaLens API",
     description="Oil Spill Detection via Satellite Imagery & AIS Vessel Correlation (SIH Problem #143)",
     version="1.0.0"
 )

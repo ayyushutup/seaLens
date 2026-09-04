@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Maritime Sentinel Quickstart Launcher.
+seaLens Quickstart Launcher.
 Starts the FastAPI application and opens the interactive dashboard.
 """
 import sys

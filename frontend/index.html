@@ -9,9 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- MapLibre / Mapbox GL JS Engine -->
+  <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -617,7 +617,7 @@
     </div>
   </div>
 
-  <!-- APPLICATION LOGIC & LEAFLET RENDERING -->
+  <!-- APPLICATION LOGIC & MAPBOX/MAPLIBRE GL JS ENGINE -->
   <script>
     lucide.createIcons();
 
@@ -627,56 +627,167 @@
       document.getElementById('liveClockUtc').textContent = now.toUTCString().split(' ')[4] + ' UTC';
     }, 1000);
 
-    // Map initialization
-    const map = L.map('map', {
-      center: [18.85, 72.40],
-      zoom: 11,
-      zoomControl: false
+    // Mapbox GL / MapLibre GL JS engine alias
+    window.mapboxgl = window.maplibregl;
+
+    // Map initialization with 3D pitch & bearing
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      center: [72.40, 18.85],
+      zoom: 10.5,
+      pitch: 45,
+      bearing: -15
     });
 
-    L.control.zoom({ position: 'bottomright' }).addTo(map);
-
-    // CARTO Basemaps API Key
-    const CARTO_KEY = 'cb1_2oyo_1_0bc33229606568c9cd2012a1';
-
-    // Base Tile Layers
-    const darkMatter = L.tileLayer(`https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
-      attribution: '&copy; CARTO &copy; OpenStreetMap',
-      subdomains: 'abcd',
-      maxZoom: 19
-    }).addTo(map);
-
-    const satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      attribution: 'Tiles &copy; Esri',
-      maxZoom: 19
-    });
-
-    const voyagerLayer = L.tileLayer(`https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`, {
-      attribution: '&copy; CARTO &copy; OpenStreetMap',
-      subdomains: 'abcd',
-      maxZoom: 19
-    });
-
-    // Layer Switcher Control
-    L.control.layers({
-      "Tactical Dark (CARTO)": darkMatter,
-      "High-Res Satellite (Esri)": satelliteLayer,
-      "Navigation Voyager": voyagerLayer
-    }, null, { position: 'topleft' }).addTo(map);
-
-    // Map Layer Groups
-    let slickLayerGroup = L.layerGroup().addTo(map);
-    let coneLayerGroup = L.layerGroup().addTo(map);
-    let vesselTracksGroup = L.layerGroup().addTo(map);
-    let vesselMarkersGroup = L.layerGroup().addTo(map);
-    let driftArrowGroup = L.layerGroup().addTo(map);
-    let darkVesselGroup = L.layerGroup().addTo(map);
-    let forwardDriftGroup = L.layerGroup().addTo(map);
-    let bufferRingsGroup = L.layerGroup().addTo(map);
+    map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
 
     let currentScenarioData = null;
+    let activeMarkers = [];
     let isPlaying = false;
     let playInterval = null;
+
+    function clearActiveMarkers() {
+      activeMarkers.forEach(m => m.remove());
+      activeMarkers = [];
+    }
+
+    // Helper to generate circle GeoJSON polygon for buffer rings
+    function createGeoJSONCircle(center, radiusInKm, points = 64) {
+      const coords = { latitude: center[1], longitude: center[0] };
+      const km = radiusInKm;
+      const ret = [];
+      const distanceX = km / (111.320 * Math.cos(coords.latitude * Math.PI / 180));
+      const distanceY = km / 110.574;
+
+      let theta, x, y;
+      for (let i = 0; i < points; i++) {
+        theta = (i / points) * (2 * Math.PI);
+        x = distanceX * Math.cos(theta);
+        y = distanceY * Math.sin(theta);
+        ret.push([coords.longitude + x, coords.latitude + y]);
+      }
+      ret.push(ret[0]);
+      return {
+        "type": "Feature",
+        "geometry": { "type": "Polygon", "coordinates": [ret] },
+        "properties": { "radius_km": radiusInKm }
+      };
+    }
+
+    // Initialize Mapbox vector sources & layers when map loads
+    map.on('load', () => {
+      // 1. Slicks Source & Layers
+      map.addSource('slicks-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'slicks-layer-fill',
+        type: 'fill',
+        source: 'slicks-src',
+        paint: {
+          'fill-color': ['case', ['get', 'is_lookalike'], '#F59E0B', '#06B6D4'],
+          'fill-opacity': 0.45
+        }
+      });
+      map.addLayer({
+        id: 'slicks-layer-line',
+        type: 'line',
+        source: 'slicks-src',
+        paint: {
+          'line-color': ['case', ['get', 'is_lookalike'], '#F59E0B', '#06B6D4'],
+          'line-width': 3
+        }
+      });
+
+      // 2. Origin Cone Source & Layers
+      map.addSource('cone-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'cone-layer-fill',
+        type: 'fill',
+        source: 'cone-src',
+        paint: {
+          'fill-color': '#F59E0B',
+          'fill-opacity': 0.2
+        }
+      });
+      map.addLayer({
+        id: 'cone-layer-line',
+        type: 'line',
+        source: 'cone-src',
+        paint: {
+          'line-color': '#F59E0B',
+          'line-width': 2,
+          'line-dasharray': [2, 2]
+        }
+      });
+
+      // 3. Vessel Tracks Source & Layer
+      map.addSource('vessels-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'vessels-layer-line',
+        type: 'line',
+        source: 'vessels-src',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': ['get', 'width'],
+          'line-opacity': 0.85
+        }
+      });
+
+      // 4. Buffer Rings Source & Layer
+      map.addSource('buffers-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'buffers-layer-line',
+        type: 'line',
+        source: 'buffers-src',
+        paint: {
+          'line-color': ['get', 'color'],
+          'line-width': 1.5,
+          'line-dasharray': [3, 3]
+        }
+      });
+
+      // 5. Forward 72h Drift Source & Layer
+      map.addSource('forward-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'forward-layer-line',
+        type: 'line',
+        source: 'forward-src',
+        paint: {
+          'line-color': '#D946EF',
+          'line-width': 3.5,
+          'line-dasharray': [4, 4]
+        }
+      });
+
+      // Interactive Click Popup for Slick Polygons
+      map.on('click', 'slicks-layer-fill', (e) => {
+        if (!e.features.length) return;
+        const props = e.features[0].properties;
+        new maplibregl.Popup({ closeButton: true, className: 'map-popup-custom' })
+          .setLngLat(e.lngLat)
+          .setHTML(`
+            <div class="font-mono text-xs p-2 space-y-1.5 bg-c2-950 text-slate-200 rounded-xl border border-c2-750">
+              <div class="flex items-center justify-between border-b border-c2-750 pb-1">
+                <b class="text-cyan-400 font-bold">${props.id || 'SLICK-001'}</b>
+                <span class="px-1.5 py-0.5 ${props.is_lookalike ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-cyan-950 text-cyan-300 border-cyan-800'} border rounded text-[9px] font-bold uppercase">${props.is_lookalike ? 'Look-alike' : 'Confirmed Oil Spill'}</span>
+              </div>
+              <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-300">
+                <div>Area: <b class="text-white">${parseFloat(props.area_sqkm).toFixed(2)} km²</b></div>
+                <div>Est. Vol: <b class="text-white">${parseFloat(props.estimated_volume_m3).toFixed(1)} m³</b></div>
+                <div>AI Conf: <b class="text-cyan-300">${(parseFloat(props.confidence_score)*100).toFixed(1)}%</b></div>
+                <div>Damping: <b class="text-amber-300">${props.is_lookalike ? '3.8 dB (Low)' : '9.2 dB (High)'}</b></div>
+              </div>
+            </div>
+          `)
+          .addTo(map);
+      });
+
+      map.on('mouseenter', 'slicks-layer-fill', () => map.getCanvas().style.cursor = 'pointer');
+      map.on('mouseleave', 'slicks-layer-fill', () => map.getCanvas().style.cursor = '');
+
+      // Load Initial Scenario once map style is ready
+      loadScenario('scenario_alpha_rogue_tanker');
+    });
 
     // Tab Navigation Logic
     const tabBtnSAR = document.getElementById('tabBtnSAR');
@@ -701,21 +812,25 @@
     tabBtnThreat.addEventListener('click', () => switchTab(tabBtnThreat, tabContentThreat));
 
     // Map Quick Filter Toggles
+    function toggleLayerVisibility(layerId, btnEl) {
+      if (map.getLayer(layerId)) {
+        const vis = map.getLayoutProperty(layerId, 'visibility') || 'visible';
+        const nextVis = vis === 'visible' ? 'none' : 'visible';
+        map.setLayoutProperty(layerId, 'visibility', nextVis);
+        btnEl.style.opacity = nextVis === 'visible' ? '1.0' : '0.4';
+      }
+    }
+
     document.getElementById('toggleSlick').addEventListener('click', function() {
-      if (map.hasLayer(slickLayerGroup)) { map.removeLayer(slickLayerGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(slickLayerGroup); this.style.opacity = '1.0'; }
+      toggleLayerVisibility('slicks-layer-fill', this);
+      toggleLayerVisibility('slicks-layer-line', this);
     });
     document.getElementById('toggleOrigin').addEventListener('click', function() {
-      if (map.hasLayer(coneLayerGroup)) { map.removeLayer(coneLayerGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(coneLayerGroup); this.style.opacity = '1.0'; }
-    });
-    document.getElementById('toggleDark').addEventListener('click', function() {
-      if (map.hasLayer(darkVesselGroup)) { map.removeLayer(darkVesselGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(darkVesselGroup); this.style.opacity = '1.0'; }
+      toggleLayerVisibility('cone-layer-fill', this);
+      toggleLayerVisibility('cone-layer-line', this);
     });
     document.getElementById('toggleBuffers').addEventListener('click', function() {
-      if (map.hasLayer(bufferRingsGroup)) { map.removeLayer(bufferRingsGroup); this.style.opacity = '0.5'; }
-      else { map.addLayer(bufferRingsGroup); this.style.opacity = '1.0'; }
+      toggleLayerVisibility('buffers-layer-line', this);
     });
 
     // Fetch and Load Scenario
@@ -736,34 +851,32 @@
 
     async function loadDarkVessels(scenarioId) {
       try {
-        darkVesselGroup.clearLayers();
         const res = await fetch(`/api/dark_vessels/${scenarioId}`);
         if (!res.ok) return;
         const intel = await res.json();
 
         intel.targets.forEach(t => {
           if (t.is_dark_vessel) {
-            // Blinking Dark Vessel Marker
-            const darkMarker = L.circleMarker([t.lat, t.lng], {
-              radius: 10,
-              color: '#EF4444',
-              fillColor: '#991B1B',
-              fillOpacity: 0.9,
-              weight: 3,
-              className: 'pulse-glow-red'
-            }).bindPopup(`
-              <div class="font-mono text-xs p-1">
-                <b class="text-rose-400">🚨 DARK VESSEL DETECTED</b><br>
-                <span class="text-slate-300">Hull Length: ~${t.radar_length_m}m</span><br>
-                <span class="text-amber-300">AIS Status: OFFLINE / SPOOFED</span><br>
-                <span class="text-slate-400">Dist to Spill Origin: ${t.dist_to_spill_origin_km} km</span>
-              </div>
-            `).bindTooltip("🚨 DARK VESSEL (AIS OFFLINE)", {
-              permanent: true,
-              direction: "top",
-              className: "bg-rose-950 text-rose-300 font-mono text-[10px] px-2 py-0.5 rounded border border-rose-700 font-bold"
-            });
-            darkVesselGroup.addLayer(darkMarker);
+            // HTML Blinking Red Dark Vessel Marker
+            const el = document.createElement('div');
+            el.className = 'w-6 h-6 rounded-full bg-rose-600 border-2 border-rose-300 animate-ping flex items-center justify-center cursor-pointer shadow-lg shadow-rose-950';
+            
+            const darkPopup = new maplibregl.Popup({ offset: 12 })
+              .setHTML(`
+                <div class="font-mono text-xs p-1 bg-rose-950/90 text-rose-200 border border-rose-800 rounded-lg">
+                  <b class="text-rose-400">🚨 DARK VESSEL DETECTED</b><br>
+                  <span class="text-slate-300">Length: ~${t.radar_length_m}m</span><br>
+                  <span class="text-amber-300">AIS: OFFLINE / SPOOFED</span><br>
+                  <span class="text-slate-400">Dist to Origin: ${t.dist_to_spill_origin_km} km</span>
+                </div>
+              `);
+
+            const marker = new maplibregl.Marker({ element: el })
+              .setLngLat([t.lng, t.lat])
+              .setPopup(darkPopup)
+              .addTo(map);
+
+            activeMarkers.push(marker);
           }
         });
       } catch (e) {
@@ -772,14 +885,7 @@
     }
 
     function renderScenario(data) {
-      // Clear previous layers
-      slickLayerGroup.clearLayers();
-      coneLayerGroup.clearLayers();
-      vesselTracksGroup.clearLayers();
-      vesselMarkersGroup.clearLayers();
-      driftArrowGroup.clearLayers();
-      forwardDriftGroup.clearLayers();
-      bufferRingsGroup.clearLayers();
+      clearActiveMarkers();
 
       // 1. Update Left Sidebar Stats
       document.getElementById('regionName').textContent = data.region_name;
@@ -811,144 +917,99 @@
         }
       }
 
-      // Wind & Current
+      // Environmental Stats
       document.getElementById('windData').textContent = `${data.environmental.wind_speed_ms.toFixed(1)} m/s @ ${data.environmental.wind_direction_deg}°`;
       document.getElementById('currentData').textContent = `${data.environmental.current_speed_ms.toFixed(2)} m/s @ ${data.environmental.current_direction_deg}°`;
       document.getElementById('elapsedDrift').textContent = `${data.drift_origin_cone.properties.elapsed_hours} hrs`;
       document.getElementById('originCoords').textContent = `${data.drift_origin_cone.properties.origin_lat.toFixed(3)}°N, ${data.drift_origin_cone.properties.origin_lng.toFixed(3)}°E`;
 
-      // Render Concentric Buffer Rings around primary slick centroid
-      if (primarySlick && primarySlick.centroid) {
-        const cLat = primarySlick.centroid.lat;
-        const cLng = primarySlick.centroid.lng;
-
-        [1000, 3000, 5000].forEach((radiusMeters, idx) => {
-          const label = idx === 0 ? '1 km Spill Core' : idx === 1 ? '3 km Caution Zone' : '5 km Impact Corridor';
-          const ringColor = idx === 0 ? '#06B6D4' : idx === 1 ? '#F59E0B' : '#A855F7';
-
-          const ring = L.circle([cLat, cLng], {
-            radius: radiusMeters,
-            color: ringColor,
-            weight: 1.5,
-            fill: false,
-            dashArray: '4, 8',
-            opacity: 0.6
-          }).bindTooltip(`📍 ${label}`, {
-            permanent: false,
-            direction: "top",
-            className: "bg-c2-950 text-slate-200 font-mono text-[10px] px-1.5 py-0.5 rounded border border-c2-750"
-          });
-          bufferRingsGroup.addLayer(ring);
-        });
+      // 2. Set Slicks GeoJSON Source
+      if (map.getSource('slicks-src')) {
+        const slickFeatures = data.slicks.map(s => ({
+          "type": "Feature",
+          "geometry": s.geojson,
+          "properties": {
+            "id": s.id,
+            "area_sqkm": s.area_sqkm,
+            "estimated_volume_m3": s.estimated_volume_m3,
+            "confidence_score": s.confidence_score,
+            "is_lookalike": s.is_lookalike
+          }
+        }));
+        map.getSource('slicks-src').setData({ type: 'FeatureCollection', features: slickFeatures });
       }
 
-      // 2. Render Slick GeoJSON
-      data.slicks.forEach(slick => {
-        const color = slick.is_lookalike ? '#F59E0B' : '#06B6D4';
-        const geoLayer = L.geoJSON(slick.geojson, {
-          style: {
-            color: color,
-            weight: 3,
-            fillColor: color,
-            fillOpacity: 0.45,
-            dashArray: slick.is_lookalike ? '4, 4' : null
-          }
-        }).bindPopup(`
-          <div class="font-mono text-xs p-2 space-y-1.5">
-            <div class="flex items-center justify-between border-b border-c2-750 pb-1">
-              <b class="text-cyan-400 font-bold">${slick.id}</b>
-              <span class="px-1.5 py-0.5 ${slick.is_lookalike ? 'bg-amber-950 text-amber-300 border-amber-800' : 'bg-cyan-950 text-cyan-300 border-cyan-800'} border rounded text-[9px] font-bold uppercase">${slick.is_lookalike ? 'Look-alike' : 'Confirmed Oil Spill'}</span>
-            </div>
-            <div class="grid grid-cols-2 gap-1 text-[11px] text-slate-300">
-              <div>Area: <b class="text-white">${slick.area_sqkm.toFixed(2)} km²</b></div>
-              <div>Est. Vol: <b class="text-white">${slick.estimated_volume_m3.toFixed(1)} m³</b></div>
-              <div>AI Conf: <b class="text-cyan-300">${(slick.confidence_score*100).toFixed(1)}%</b></div>
-              <div>Damping: <b class="text-amber-300">${slick.is_lookalike ? '3.8 dB (Low)' : '9.2 dB (High)'}</b></div>
-            </div>
-            <div class="text-[10px] text-slate-400 pt-1 border-t border-c2-800">
-              Centroid: ${slick.centroid ? `${slick.centroid.lat.toFixed(3)}°N, ${slick.centroid.lng.toFixed(3)}°E` : 'N/A'}
-            </div>
-          </div>
-        `);
-        slickLayerGroup.addLayer(geoLayer);
-      });
+      // 3. Set Origin Cone GeoJSON Source
+      if (map.getSource('cone-src')) {
+        map.getSource('cone-src').setData(data.drift_origin_cone);
+      }
 
-      // 3. Render Reverse Drift Origin Cone
-      const coneGeo = L.geoJSON(data.drift_origin_cone, {
-        style: {
-          color: '#F59E0B',
-          weight: 2,
-          fillColor: '#F59E0B',
-          fillOpacity: 0.2,
-          dashArray: '5, 5'
-        }
-      }).bindPopup(`
-        <div class="font-mono text-xs p-1">
-          <b class="text-amber-400">Estimated Spill Origin Cone</b><br>
-          Backtrack: -${data.drift_origin_cone.properties.elapsed_hours} hrs<br>
-          Uncertainty Radius: ${data.drift_origin_cone.properties.uncertainty_radius_km} km
-        </div>
-      `);
-      coneLayerGroup.addLayer(coneGeo);
-
-      // Center Origin Marker
+      // Add Origin Point Marker
       const originLat = data.drift_origin_cone.properties.origin_lat;
       const originLng = data.drift_origin_cone.properties.origin_lng;
-      const originMarker = L.circleMarker([originLat, originLng], {
-        radius: 7,
-        color: '#F59E0B',
-        fillColor: '#EF4444',
-        fillOpacity: 1.0,
-        weight: 2
-      }).bindTooltip("Estimated Discharge Point", { permanent: true, direction: "top", className: "bg-c2-950 text-amber-300 font-mono text-[10px] px-1.5 py-0.5 rounded border border-amber-700" });
-      coneLayerGroup.addLayer(originMarker);
 
-      // Connect Origin to Slick Centroid with Drift Vector Arrow
-      if (primarySlick) {
-        const driftLine = L.polyline([
-          [originLat, originLng],
-          [primarySlick.centroid.lat, primarySlick.centroid.lng]
-        ], {
-          color: '#A855F7',
-          weight: 2.5,
-          dashArray: '3, 6'
+      const originNode = document.createElement('div');
+      originNode.className = 'w-5 h-5 rounded-full bg-amber-500 border-2 border-red-500 flex items-center justify-center font-mono text-[9px] font-bold text-white shadow-lg shadow-amber-500/50';
+      originNode.textContent = 'X0';
+
+      const originMarker = new maplibregl.Marker({ element: originNode })
+        .setLngLat([originLng, originLat])
+        .setPopup(new maplibregl.Popup().setHTML(`<b class="font-mono text-xs text-amber-400">Spill Origin Point (-${data.drift_origin_cone.properties.elapsed_hours}h)</b>`))
+        .addTo(map);
+
+      activeMarkers.push(originMarker);
+
+      // 4. Set Spatial Buffer Rings GeoJSON Source
+      if (primarySlick && primarySlick.centroid && map.getSource('buffers-src')) {
+        const cLat = primarySlick.centroid.lat;
+        const cLng = primarySlick.centroid.lng;
+        const bufferFeatures = [
+          { feat: createGeoJSONCircle([cLng, cLat], 1.0), color: '#06B6D4' },
+          { feat: createGeoJSONCircle([cLng, cLat], 3.0), color: '#F59E0B' },
+          { feat: createGeoJSONCircle([cLng, cLat], 5.0), color: '#A855F7' }
+        ].map(b => {
+          b.feat.properties.color = b.color;
+          return b.feat;
         });
-        driftArrowGroup.addLayer(driftLine);
+        map.getSource('buffers-src').setData({ type: 'FeatureCollection', features: bufferFeatures });
       }
 
-      // 4. Render Vessel Trajectories
+      // 5. Render Vessel Trajectories
+      const vesselLineFeatures = [];
       data.vessels.forEach(vessel => {
         const culpritMatch = data.culprits.find(c => c.mmsi === vessel.metadata.mmsi);
-        let trackColor = '#64748B'; // Cleared
+        let trackColor = '#64748B';
+        let width = 2;
         if (culpritMatch) {
-          if (culpritMatch.verdict === 'PRIMARY SUSPECT') trackColor = '#EF4444';
-          else if (culpritMatch.verdict === 'POTENTIAL CONTRIBUTOR') trackColor = '#F59E0B';
+          if (culpritMatch.verdict === 'PRIMARY SUSPECT') { trackColor = '#EF4444'; width = 3.5; }
+          else if (culpritMatch.verdict === 'POTENTIAL CONTRIBUTOR') { trackColor = '#F59E0B'; width = 2.5; }
         }
 
-        const latlngs = vessel.positions.map(p => [p.lat, p.lng]);
-        const trackPolyline = L.polyline(latlngs, {
-          color: trackColor,
-          weight: culpritMatch?.verdict === 'PRIMARY SUSPECT' ? 3.5 : 2.0,
-          opacity: 0.85
-        }).addTo(vesselTracksGroup);
-
-        // Vessel Icon at latest position
-        const latestPos = vessel.positions[vessel.positions.length - 1];
-        const shipMarker = L.circleMarker([latestPos.lat, latestPos.lng], {
-          radius: culpritMatch?.verdict === 'PRIMARY SUSPECT' ? 8 : 5,
-          color: trackColor,
-          fillColor: trackColor,
-          fillOpacity: 0.9,
-          weight: 2
-        }).bindTooltip(`<b>${vessel.metadata.name}</b> (${vessel.metadata.ship_type})`, {
-          permanent: false,
-          direction: "right",
-          className: "bg-c2-950 text-slate-200 font-mono text-xs px-2 py-1 rounded border border-c2-750"
+        const lineCoords = vessel.positions.map(p => [p.lng, p.lat]);
+        vesselLineFeatures.push({
+          "type": "Feature",
+          "geometry": { "type": "LineString", "coordinates": lineCoords },
+          "properties": { "name": vessel.metadata.name, "color": trackColor, "width": width }
         });
-        vesselMarkersGroup.addLayer(shipMarker);
+
+        // Add Vessel Marker at latest position
+        const latestPos = vessel.positions[vessel.positions.length - 1];
+        const vNode = document.createElement('div');
+        vNode.className = `w-4 h-4 rounded-full border-2 border-white flex items-center justify-center font-mono text-[8px] font-bold text-white shadow-md ${culpritMatch?.verdict === 'PRIMARY SUSPECT' ? 'bg-rose-600 animate-pulse w-5 h-5' : 'bg-slate-700'}`;
+        
+        const shipMarker = new maplibregl.Marker({ element: vNode })
+          .setLngLat([latestPos.lng, latestPos.lat])
+          .setPopup(new maplibregl.Popup().setHTML(`<div class="font-mono text-xs p-1"><b>${vessel.metadata.name}</b><br>Type: ${vessel.metadata.ship_type}<br>MMSI: ${vessel.metadata.mmsi}</div>`))
+          .addTo(map);
+
+        activeMarkers.push(shipMarker);
       });
 
-      // 5. Populate Culprit Leaderboard
+      if (map.getSource('vessels-src')) {
+        map.getSource('vessels-src').setData({ type: 'FeatureCollection', features: vesselLineFeatures });
+      }
+
+      // 6. Populate Culprit Leaderboard
       const listContainer = document.getElementById('culpritList');
       listContainer.innerHTML = '';
       document.getElementById('vesselCountBadge').textContent = `${data.culprits.length} Vessels Evaluated`;
@@ -1002,9 +1063,14 @@
         listContainer.appendChild(card);
       });
 
-      // Fit map to scenario bounds
-      const bounds = L.latLngBounds(data.sar_image.bounds);
-      map.fitBounds(bounds, { padding: [40, 40] });
+      // Fly map to origin camera view with 3D tilt
+      map.flyTo({
+        center: [originLng, originLat],
+        zoom: 11,
+        pitch: 45,
+        bearing: -15,
+        duration: 1500
+      });
       lucide.createIcons();
     }
 
@@ -1022,48 +1088,45 @@
         if (!res.ok) throw new Error("Failed to fetch forward forecast");
         const forecast = await res.json();
 
-        // Clear previous forward drift layers
-        forwardDriftGroup.clearLayers();
+        // Set Forward Drift Line Source
+        const pts = forecast.trajectory_72h.map(p => [p.lng, p.lat]);
+        if (map.getSource('forward-src')) {
+          map.getSource('forward-src').setData({
+            "type": "FeatureCollection",
+            "features": [{
+              "type": "Feature",
+              "geometry": { "type": "LineString", "coordinates": pts },
+              "properties": {}
+            }]
+          });
+        }
 
-        // 1. Draw Forward 72h Trajectory Path
-        const pts = forecast.trajectory_72h.map(p => [p.lat, p.lng]);
-        const forwardLine = L.polyline(pts, {
-          color: '#D946EF',
-          weight: 3.5,
-          dashArray: '6, 6',
-          opacity: 0.95
-        }).addTo(forwardDriftGroup);
-
-        // 2. Add Coastal Landfall Impact Marker
+        // Coastal Landfall Marker
         const impact = forecast.landfall_impact;
         if (impact) {
-          const impactMarker = L.circleMarker([impact.impact_lat, impact.impact_lng], {
-            radius: 12,
-            color: '#EC4899',
-            fillColor: '#BE185D',
-            fillOpacity: 0.9,
-            weight: 3,
-            className: 'pulse-glow-purple'
-          }).bindPopup(`
-            <div class="font-mono text-xs p-1">
-              <b class="text-pink-400">🚨 PROJECTED COASTAL IMPACT</b><br>
-              <b>Site:</b> ${impact.target_name}<br>
-              <b>ETA:</b> <span class="text-rose-400 font-bold">${impact.eta_hours} hrs</span> (${impact.impact_timestamp})<br>
-              <b>Booms Required:</b> ${forecast.containment_plan.containment_booms_recommended_m} meters
-            </div>
-          `).bindTooltip(`🚨 LANDFALL ETA: ${impact.eta_hours}h (${impact.target_name})`, {
-            permanent: true,
-            direction: "top",
-            className: "bg-purple-950 text-pink-300 font-mono text-[10px] px-2 py-0.5 rounded border border-purple-700 font-bold"
-          });
-          forwardDriftGroup.addLayer(impactMarker);
+          const impNode = document.createElement('div');
+          impNode.className = 'w-7 h-7 rounded-full bg-pink-600 border-2 border-white animate-ping flex items-center justify-center cursor-pointer shadow-xl shadow-pink-950';
+
+          const impactMarker = new maplibregl.Marker({ element: impNode })
+            .setLngLat([impact.impact_lng, impact.impact_lat])
+            .setPopup(new maplibregl.Popup().setHTML(`
+              <div class="font-mono text-xs p-1 bg-purple-950 text-pink-200 border border-purple-800 rounded-lg">
+                <b class="text-pink-400">🚨 PROJECTED COASTAL IMPACT</b><br>
+                <b>Site:</b> ${impact.target_name}<br>
+                <b>ETA:</b> <span class="text-rose-400 font-bold">${impact.eta_hours} hrs</span><br>
+                <b>Booms:</b> ${forecast.containment_plan.containment_booms_recommended_m}m
+              </div>
+            `))
+            .addTo(map);
+
+          activeMarkers.push(impactMarker);
 
           // Populate Landfall Modal
           document.getElementById('landfallTargetText').textContent = `Target: ${impact.target_name} (${impact.target_type})`;
           document.getElementById('landfallEtaText').textContent = `${impact.eta_hours} Hours`;
         }
 
-        // 3. Populate Weathering Stats (at 24h)
+        // Weathering Stats
         const w24 = forecast.weathering_timeline.find(w => w.elapsed_hours === 24) || forecast.weathering_timeline[forecast.weathering_timeline.length - 1];
         document.getElementById('wEvapPct').textContent = `${w24.evaporated_pct}%`;
         document.getElementById('wEmulsionPct').textContent = `${w24.emulsified_water_pct}%`;
@@ -1074,9 +1137,8 @@
         document.getElementById('cBooms').textContent = `${forecast.containment_plan.containment_booms_recommended_m} meters of Offshore Inflatable Booms`;
         document.getElementById('cDispersants').textContent = forecast.containment_plan.chemical_dispersant_status;
 
-        // Show Modal & fit map bounds
+        // Show Modal
         landfallModal.classList.remove('hidden');
-        map.fitBounds(forwardLine.getBounds(), { padding: [50, 50] });
 
       } catch (err) {
         alert("Forward drift error: " + err);
@@ -1101,27 +1163,28 @@
         const res = await fetch('/api/process_synthetic_geotiff', { method: 'POST' });
         const result = await res.json();
         
-        // Render generated polygons on map
-        result.polygons.forEach((polyCoords, i) => {
-          const geoJsonFeature = {
-            "type": "Feature",
-            "geometry": { "type": "Polygon", "coordinates": [polyCoords] },
-            "properties": {}
-          };
-          const layer = L.geoJSON(geoJsonFeature, {
-            style: { color: '#06B6D4', weight: 3, fillColor: '#06B6D4', fillOpacity: 0.4 }
-          }).bindPopup(`<b>Real-Time PyTorch U-Net Segment</b><br>Polygon #${i+1}`).addTo(slickLayerGroup);
-        });
+        // Convert polygons to Mapbox GeoJSON Features
+        const polyFeatures = result.polygons.map((polyCoords, i) => ({
+          "type": "Feature",
+          "geometry": { "type": "Polygon", "coordinates": [polyCoords] },
+          "properties": { "id": `SAR-UNET-${i+1}`, "area_sqkm": 2.60, "estimated_volume_m3": 7.8, "confidence_score": 0.99, "is_lookalike": false }
+        }));
 
-        // Render CFAR ships
+        if (map.getSource('slicks-src')) {
+          map.getSource('slicks-src').setData({ type: 'FeatureCollection', features: polyFeatures });
+        }
+
+        // Render CFAR ships as Markers
         result.radar_ships.forEach(s => {
-          L.circleMarker([s.lat, s.lng], {
-            radius: 8,
-            color: '#10B981',
-            fillColor: '#059669',
-            fillOpacity: 0.9,
-            weight: 2
-          }).bindPopup(`<b>CFAR Radar Spotter:</b> ${s.id}<br>Length: ~${s.estimated_length_m}m<br>SNR: ${s.cfar_snr_db} dB`).addTo(vesselMarkersGroup);
+          const node = document.createElement('div');
+          node.className = 'w-4 h-4 rounded-full bg-emerald-500 border-2 border-emerald-200 shadow-lg';
+          
+          const shipMarker = new maplibregl.Marker({ element: node })
+            .setLngLat([s.lng, s.lat])
+            .setPopup(new maplibregl.Popup().setHTML(`<b>CFAR Radar Spotter:</b> ${s.id}<br>Length: ~${s.estimated_length_m}m<br>SNR: ${s.cfar_snr_db} dB`))
+            .addTo(map);
+
+          activeMarkers.push(shipMarker);
         });
 
         alert(`✅ SAR Pipeline Complete!\n\n1. Ingested 16-bit GeoTIFF (512x512)\n2. Applied 5x5 Adaptive Lee Filter\n3. Inferred PyTorch U-Net Segmentation (${result.polygons_detected_count} Slicks Vectorized)\n4. Ran 2D CA-CFAR Radar Detector (${result.radar_ships_detected_count} Radar Ships Identified)`);
@@ -1185,9 +1248,6 @@
       const currentDriftHour = ((val / 100) * elapsed).toFixed(1);
       currentTimeLabel.textContent = `T + ${currentDriftHour} hrs drift (Scrubber ${val}%)`;
     }
-
-    // Initial Load
-    loadScenario('scenario_alpha_rogue_tanker');
   </script>
 </body>
 </html>

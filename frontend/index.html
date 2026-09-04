@@ -392,6 +392,11 @@
 
       <!-- MAP FLOATING QUICK FILTERS (Top Left Floating Pill) -->
       <div class="absolute top-4 left-4 z-10 flex items-center space-x-1.5 bg-c2-900/90 backdrop-blur-md p-1.5 rounded-xl border border-c2-750 shadow-xl text-xs font-mono">
+        <select id="mapStyleSelect" class="bg-c2-800 text-cyan-300 font-bold px-2 py-1 rounded-lg border border-cyan-600/60 focus:outline-none cursor-pointer">
+          <option value="https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json" selected>🌈 Colorful Voyager</option>
+          <option value="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json">🕶️ Tactical Dark</option>
+          <option value="https://basemaps.cartocdn.com/gl/positron-gl-style/style.json">☀️ Bright Light</option>
+        </select>
         <button id="toggleSlick" class="px-2.5 py-1 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-700/60 font-semibold hover:bg-cyan-900 transition-all flex items-center space-x-1">
           <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
           <span>Slick</span>
@@ -630,10 +635,10 @@
     // Mapbox GL / MapLibre GL JS engine alias
     window.mapboxgl = window.maplibregl;
 
-    // Map initialization with 3D pitch & bearing
+    // Map initialization with 3D pitch & bearing & Colorful Voyager style
     const map = new maplibregl.Map({
       container: 'map',
-      style: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+      style: 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
       center: [72.40, 18.85],
       zoom: 10.5,
       pitch: 45,
@@ -641,6 +646,11 @@
     });
 
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), 'bottom-right');
+
+    // Dynamic Map Style Switcher Listener
+    document.getElementById('mapStyleSelect').addEventListener('change', (e) => {
+      map.setStyle(e.target.value);
+    });
 
     let currentScenarioData = null;
     let activeMarkers = [];
@@ -675,89 +685,99 @@
       };
     }
 
-    // Initialize Mapbox vector sources & layers when map loads
+    // Function to setup map sources and layers
+    function setupMapLayers() {
+      if (!map.getSource('slicks-src')) {
+        map.addSource('slicks-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'slicks-layer-fill',
+          type: 'fill',
+          source: 'slicks-src',
+          paint: {
+            'fill-color': ['case', ['get', 'is_lookalike'], '#FFB703', '#00F0FF'],
+            'fill-opacity': 0.55
+          }
+        });
+        map.addLayer({
+          id: 'slicks-layer-line',
+          type: 'line',
+          source: 'slicks-src',
+          paint: {
+            'line-color': ['case', ['get', 'is_lookalike'], '#FF9F00', '#00C4FF'],
+            'line-width': 4
+          }
+        });
+      }
+
+      if (!map.getSource('cone-src')) {
+        map.addSource('cone-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'cone-layer-fill',
+          type: 'fill',
+          source: 'cone-src',
+          paint: {
+            'fill-color': '#FF5722',
+            'fill-opacity': 0.35
+          }
+        });
+        map.addLayer({
+          id: 'cone-layer-line',
+          type: 'line',
+          source: 'cone-src',
+          paint: {
+            'line-color': '#FF1744',
+            'line-width': 2.5,
+            'line-dasharray': [2, 2]
+          }
+        });
+      }
+
+      if (!map.getSource('vessels-src')) {
+        map.addSource('vessels-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'vessels-layer-line',
+          type: 'line',
+          source: 'vessels-src',
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': ['get', 'width'],
+            'line-opacity': 0.95
+          }
+        });
+      }
+
+      if (!map.getSource('buffers-src')) {
+        map.addSource('buffers-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'buffers-layer-line',
+          type: 'line',
+          source: 'buffers-src',
+          paint: {
+            'line-color': ['get', 'color'],
+            'line-width': 2,
+            'line-dasharray': [3, 3]
+          }
+        });
+      }
+
+      if (!map.getSource('forward-src')) {
+        map.addSource('forward-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'forward-layer-line',
+          type: 'line',
+          source: 'forward-src',
+          paint: {
+            'line-color': '#FF007F',
+            'line-width': 4,
+            'line-dasharray': [4, 4]
+          }
+        });
+      }
+    }
+
+    // Initialize Mapbox vector sources & layers when map loads or changes style
     map.on('load', () => {
-      // 1. Slicks Source & Layers
-      map.addSource('slicks-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'slicks-layer-fill',
-        type: 'fill',
-        source: 'slicks-src',
-        paint: {
-          'fill-color': ['case', ['get', 'is_lookalike'], '#F59E0B', '#06B6D4'],
-          'fill-opacity': 0.45
-        }
-      });
-      map.addLayer({
-        id: 'slicks-layer-line',
-        type: 'line',
-        source: 'slicks-src',
-        paint: {
-          'line-color': ['case', ['get', 'is_lookalike'], '#F59E0B', '#06B6D4'],
-          'line-width': 3
-        }
-      });
-
-      // 2. Origin Cone Source & Layers
-      map.addSource('cone-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'cone-layer-fill',
-        type: 'fill',
-        source: 'cone-src',
-        paint: {
-          'fill-color': '#F59E0B',
-          'fill-opacity': 0.2
-        }
-      });
-      map.addLayer({
-        id: 'cone-layer-line',
-        type: 'line',
-        source: 'cone-src',
-        paint: {
-          'line-color': '#F59E0B',
-          'line-width': 2,
-          'line-dasharray': [2, 2]
-        }
-      });
-
-      // 3. Vessel Tracks Source & Layer
-      map.addSource('vessels-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'vessels-layer-line',
-        type: 'line',
-        source: 'vessels-src',
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': ['get', 'width'],
-          'line-opacity': 0.85
-        }
-      });
-
-      // 4. Buffer Rings Source & Layer
-      map.addSource('buffers-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'buffers-layer-line',
-        type: 'line',
-        source: 'buffers-src',
-        paint: {
-          'line-color': ['get', 'color'],
-          'line-width': 1.5,
-          'line-dasharray': [3, 3]
-        }
-      });
-
-      // 5. Forward 72h Drift Source & Layer
-      map.addSource('forward-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
-      map.addLayer({
-        id: 'forward-layer-line',
-        type: 'line',
-        source: 'forward-src',
-        paint: {
-          'line-color': '#D946EF',
-          'line-width': 3.5,
-          'line-dasharray': [4, 4]
-        }
-      });
+      setupMapLayers();
 
       // Interactive Click Popup for Slick Polygons
       map.on('click', 'slicks-layer-fill', (e) => {
@@ -787,6 +807,11 @@
 
       // Load Initial Scenario once map style is ready
       loadScenario('scenario_alpha_rogue_tanker');
+    });
+
+    map.on('style.load', () => {
+      setupMapLayers();
+      if (currentScenarioData) renderScenario(currentScenarioData);
     });
 
     // Tab Navigation Logic
@@ -964,9 +989,9 @@
         const cLat = primarySlick.centroid.lat;
         const cLng = primarySlick.centroid.lng;
         const bufferFeatures = [
-          { feat: createGeoJSONCircle([cLng, cLat], 1.0), color: '#06B6D4' },
-          { feat: createGeoJSONCircle([cLng, cLat], 3.0), color: '#F59E0B' },
-          { feat: createGeoJSONCircle([cLng, cLat], 5.0), color: '#A855F7' }
+          { feat: createGeoJSONCircle([cLng, cLat], 1.0), color: '#00F0FF' },
+          { feat: createGeoJSONCircle([cLng, cLat], 3.0), color: '#FFB703' },
+          { feat: createGeoJSONCircle([cLng, cLat], 5.0), color: '#FF007F' }
         ].map(b => {
           b.feat.properties.color = b.color;
           return b.feat;
@@ -978,11 +1003,11 @@
       const vesselLineFeatures = [];
       data.vessels.forEach(vessel => {
         const culpritMatch = data.culprits.find(c => c.mmsi === vessel.metadata.mmsi);
-        let trackColor = '#64748B';
-        let width = 2;
+        let trackColor = '#3B82F6';
+        let width = 2.5;
         if (culpritMatch) {
-          if (culpritMatch.verdict === 'PRIMARY SUSPECT') { trackColor = '#EF4444'; width = 3.5; }
-          else if (culpritMatch.verdict === 'POTENTIAL CONTRIBUTOR') { trackColor = '#F59E0B'; width = 2.5; }
+          if (culpritMatch.verdict === 'PRIMARY SUSPECT') { trackColor = '#FF0055'; width = 4.5; }
+          else if (culpritMatch.verdict === 'POTENTIAL CONTRIBUTOR') { trackColor = '#FF9F00'; width = 3.0; }
         }
 
         const lineCoords = vessel.positions.map(p => [p.lng, p.lat]);

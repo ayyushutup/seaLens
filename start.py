@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 if __name__ == "__main__":
     print("===================================================================")
-    print("       🌊 MARITIME SENTINEL: OIL SPILL & AIS ATTRIBUTION C2       ")
+    print("           🌊 seaLens: OIL SPILL & AIS ATTRIBUTION C2             ")
     print("                      SIH Problem #143 (NTRO)                      ")
     print("===================================================================")
     print("📡 Starting API & Operations Dashboard on http://localhost:8000 ...")

@@ -63,7 +63,7 @@ if os.path.exists(checkpoint_path):
 
 @app.get("/api/health")
 def health_check():
-    return {"status": "operational", "system": "Maritime Sentinel C2 Engine", "unet_loaded": os.path.exists(checkpoint_path)}
+    return {"status": "operational", "system": "seaLens C2 Engine", "unet_loaded": os.path.exists(checkpoint_path)}
 
 @app.get("/api/dark_vessels/{scenario_id}")
 def get_dark_vessels(scenario_id: str):

@@ -417,6 +417,14 @@
           <span class="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
           <span>Ocean Vectors</span>
         </button>
+        <button id="toggle3DVolume" class="px-2.5 py-1 rounded-lg bg-indigo-950 text-indigo-300 border border-indigo-700/60 font-semibold hover:bg-indigo-900 transition-all flex items-center space-x-1">
+          <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+          <span>3D Volume</span>
+        </button>
+        <button id="toggleMeasure" class="px-2.5 py-1 rounded-lg bg-pink-950 text-pink-300 border border-pink-700/60 font-semibold hover:bg-pink-900 transition-all flex items-center space-x-1">
+          <span class="w-2 h-2 rounded-full bg-pink-400"></span>
+          <span>Distance Tape</span>
+        </button>
       </div>
 
       <!-- FLOATING MAP LEGEND CARD (Bottom Left Map Canvas Overlay) -->
@@ -715,6 +723,17 @@
             'line-width': 4
           }
         });
+        map.addLayer({
+          id: 'slicks-layer-extrusion',
+          type: 'fill-extrusion',
+          source: 'slicks-src',
+          paint: {
+            'fill-extrusion-color': ['case', ['get', 'is_lookalike'], '#FFB703', '#00F0FF'],
+            'fill-extrusion-height': ['get', 'extrusion_height'],
+            'fill-extrusion-base': 0,
+            'fill-extrusion-opacity': 0.75
+          }
+        });
       }
 
       if (!map.getSource('cone-src')) {
@@ -778,6 +797,20 @@
             'line-color': '#FF007F',
             'line-width': 4,
             'line-dasharray': [4, 4]
+          }
+        });
+      }
+
+      if (!map.getSource('measure-src')) {
+        map.addSource('measure-src', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+        map.addLayer({
+          id: 'measure-layer-line',
+          type: 'line',
+          source: 'measure-src',
+          paint: {
+            'line-color': '#EC4899',
+            'line-width': 3,
+            'line-dasharray': [2, 3]
           }
         });
       }
@@ -953,6 +986,9 @@
       }
     }
 
+    let isMeasureActive = false;
+    let measureMarker = null;
+
     document.getElementById('toggleSlick').addEventListener('click', function() {
       toggleLayerVisibility('slicks-layer-fill', this);
       toggleLayerVisibility('slicks-layer-line', this);
@@ -967,6 +1003,67 @@
     document.getElementById('toggleVectors').addEventListener('click', function() {
       toggleLayerVisibility('particles-layer-line', this);
       toggleLayerVisibility('particles-layer-point', this);
+    });
+    document.getElementById('toggle3DVolume').addEventListener('click', function() {
+      toggleLayerVisibility('slicks-layer-extrusion', this);
+    });
+    document.getElementById('toggleMeasure').addEventListener('click', function() {
+      isMeasureActive = !isMeasureActive;
+      this.style.opacity = isMeasureActive ? '1.0' : '0.4';
+      if (isMeasureActive) {
+        alert("📏 Distance Tape Active!\nClick anywhere on the ocean map to measure distance and bearing to the oil spill origin point.");
+      } else {
+        if (map.getSource('measure-src')) {
+          map.getSource('measure-src').setData({ type: 'FeatureCollection', features: [] });
+        }
+        if (measureMarker) { measureMarker.remove(); measureMarker = null; }
+      }
+    });
+
+    function calculateHaversineKm(lat1, lon1, lat2, lon2) {
+      const R = 6371.0;
+      const dLat = (lat2 - lat1) * Math.PI / 180.0;
+      const dLon = (lon2 - lon1) * Math.PI / 180.0;
+      const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180.0) * Math.cos(lat2 * Math.PI / 180.0) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    map.on('click', (e) => {
+      if (!isMeasureActive || !currentScenarioData) return;
+      const oLat = currentScenarioData.drift_origin_cone.properties.origin_lat;
+      const oLng = currentScenarioData.drift_origin_cone.properties.origin_lng;
+
+      const clickLat = e.lngLat.lat;
+      const clickLng = e.lngLat.lng;
+
+      const distKm = calculateHaversineKm(oLat, oLng, clickLat, clickLng);
+      const distNm = distKm * 0.539957;
+
+      if (map.getSource('measure-src')) {
+        map.getSource('measure-src').setData({
+          "type": "FeatureCollection",
+          "features": [{
+            "type": "Feature",
+            "geometry": { "type": "LineString", "coordinates": [[oLng, oLat], [clickLng, clickLat]] },
+            "properties": {}
+          }]
+        });
+      }
+
+      if (measureMarker) measureMarker.remove();
+      const midLng = (oLng + clickLng) / 2.0;
+      const midLat = (oLat + clickLat) / 2.0;
+
+      const popupNode = document.createElement('div');
+      popupNode.className = 'px-2.5 py-1 bg-pink-950 text-pink-200 border border-pink-700 rounded-lg text-xs font-mono font-bold shadow-xl';
+      popupNode.innerHTML = `📏 ${distKm.toFixed(2)} km (${distNm.toFixed(2)} NM) to Spill Origin`;
+
+      measureMarker = new maplibregl.Marker({ element: popupNode })
+        .setLngLat([midLng, midLat])
+        .addTo(map);
     });
 
     // Fetch and Load Scenario

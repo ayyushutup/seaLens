@@ -678,38 +678,7 @@
       flex-shrink: 0;
     }
 
-    /* ─── 3 PRELOADED SCENARIO QUICK-LAUNCHERS ─── */
-    .scenarios-section {
-      padding: 60px 48px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      border-bottom: 1px solid var(--border);
-    }
-    .scenario-cards-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 20px;
-      max-width: 1300px;
-      margin: 32px auto 0;
-    }
-    .sc-card {
-      background: #FAFAFA;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      text-decoration: none;
-      color: var(--text-primary);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.25s;
-    }
-    .sc-card:hover {
-      background: #fff;
-      box-shadow: var(--shadow-lg);
-      transform: translateY(-4px);
-      border-color: var(--blue);
-    }
+
 
     /* ─── GLOBE SVG CONTAINER ─── */
     #globe-svg-wrapper {
@@ -903,7 +872,6 @@
     <li><a href="#section-2">Data Ingestion</a></li>
     <li><a href="#section-3">Detection</a></li>
     <li><a href="#section-4">AI Fusion</a></li>
-    <li><a href="#scenarios">Scenarios</a></li>
     <li><a href="/c2" style="font-weight: 700; color: #2563EB;">Live C2 Console</a></li>
     <li><a href="/c2" class="nav-cta">Launch C2 Platform →</a></li>
   </ul>
@@ -977,9 +945,9 @@
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
             Launch C2 Platform
           </a>
-          <a href="#scenarios" class="btn-secondary">
+          <a href="#section-2" class="btn-secondary">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#0A0A0A" stroke-width="1.5"/><path d="M5.5 5.5l3 1.5-3 1.5V5.5z" fill="#0A0A0A"/></svg>
-            Explore Scenarios
+            Explore Intelligence
           </a>
         </div>
         <div class="hero-metrics" id="hero-metrics">
@@ -1473,61 +1441,7 @@
 
   </main>
 
-  <!-- ─── PRELOADED SCENARIO QUICK-LAUNCHERS SECTION ─── -->
-  <section id="scenarios" class="scenarios-section">
-    <div style="max-width:1300px;margin:0 auto;text-align:center;">
-      <span class="section-label-num" style="margin:0 auto 12px;">★</span>
-      <h2 style="font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;">Operational Mission Scenarios</h2>
-      <p style="font-size:14px;color:var(--text-secondary);max-width:560px;margin:0 auto;">Launch live end-to-end incident simulations pre-configured with real Sentinel-1 SAR imagery and AIS feeds.</p>
-    </div>
 
-    <div class="scenario-cards-grid">
-      <a href="/c2?scenario=scenario_alpha_rogue_tanker" class="sc-card">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--red);">SCENARIO ALPHA</span>
-            <span class="globe-card-badge badge-red">🚨 Verified Spill</span>
-          </div>
-          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">The Rogue Tanker</h3>
-          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Arabian Sea · Intentional night bilge discharge with AIS transponder evasion. High radar contrast.</p>
-        </div>
-        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
-          <span>Launch Investigation</span>
-          <span>→</span>
-        </div>
-      </a>
-
-      <a href="/c2?scenario=scenario_beta_singapore_strait" class="sc-card">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--amber);">SCENARIO BETA</span>
-            <span class="globe-card-badge badge-amber">⚡ Confluence</span>
-          </div>
-          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">Singapore Strait Confluence</h3>
-          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Multi-vessel traffic corridor. Reverse drift backtracking eliminates non-culprit container ships.</p>
-        </div>
-        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
-          <span>Launch Investigation</span>
-          <span>→</span>
-        </div>
-      </a>
-
-      <a href="/c2?scenario=scenario_gamma_lookalike" class="sc-card">
-        <div>
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--emerald);">SCENARIO GAMMA</span>
-            <span class="globe-card-badge" style="background:rgba(16,185,129,0.08);color:#10B981;">✓ False Alarm Filtered</span>
-          </div>
-          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">Look-Alike False Alarm</h3>
-          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Bay of Bengal · Low-wind biogenic algal slick automatically rejected by dual-polarization SAR ratio.</p>
-        </div>
-        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
-          <span>Launch Investigation</span>
-          <span>→</span>
-        </div>
-      </a>
-    </div>
-  </section>
 
   <!-- ─── FOOTER ─── -->
   <footer>
@@ -1540,7 +1454,6 @@
       <a href="#section-2">Technology</a>
       <a href="#section-3">Detection</a>
       <a href="#section-4">Analytics</a>
-      <a href="#scenarios">Scenarios</a>
       <a href="/c2">C2 Operations</a>
     </div>
     <div style="font-size: 12px; color: var(--text-tertiary);">

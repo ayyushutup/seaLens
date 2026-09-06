@@ -265,12 +265,28 @@ if os.path.exists(frontend_dir):
     app.mount("/static", StaticFiles(directory=frontend_dir), name="static")
 
 @app.get("/")
-def serve_dashboard():
+def serve_landing_page():
+    # Check if built landing page or index.html exists
     index_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
     if os.path.exists(index_path):
         with open(index_path, "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    return HTMLResponse("<h1>Maritime Sentinel API Running</h1><p>Visit /api/scenarios or create frontend/index.html</p>")
+    return HTMLResponse("<h1>Sealens API Running</h1><p>Visit <a href='/c2'>/c2</a> for the Command Center</p>")
+
+@app.get("/c2")
+@app.get("/dashboard")
+def serve_c2_console():
+    c2_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "c2.html")
+    if os.path.exists(c2_path):
+        with open(c2_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    # Fallback to index if c2 not found
+    index_path = os.path.join(os.path.dirname(__file__), "..", "frontend", "index.html")
+    if os.path.exists(index_path):
+        with open(index_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    return HTMLResponse("<h1>Sealens C2 Console</h1><p>frontend/c2.html not found</p>")
 
 if __name__ == "__main__":
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
+

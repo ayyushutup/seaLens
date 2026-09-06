@@ -4,12 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sealens — AI-Powered Maritime Domain Awareness</title>
-  <meta name="description" content="Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, and generate actionable insights." />
+  <meta name="description" content="Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, assess risks, and generate actionable insights." />
   
-  <!-- Fonts -->
+  <!-- Modern Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   
   <!-- GSAP + ScrollTrigger -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
@@ -30,11 +30,15 @@
       --text-tertiary: #8A8A8A;
       --blue: #2563EB;
       --blue-light: rgba(37, 99, 235, 0.08);
-      --blue-mid: rgba(37, 99, 235, 0.15);
+      --blue-mid: rgba(37, 99, 235, 0.16);
+      --blue-glow: rgba(37, 99, 235, 0.35);
       --red: #DC2626;
+      --red-light: rgba(220, 38, 38, 0.08);
+      --amber: #D97706;
+      --emerald: #10B981;
       --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
       --shadow-md: 0 4px 16px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
-      --shadow-lg: 0 12px 40px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.05);
+      --shadow-lg: 0 14px 44px rgba(0,0,0,0.09), 0 4px 16px rgba(0,0,0,0.05);
       --radius: 14px;
       --radius-lg: 20px;
     }
@@ -45,7 +49,6 @@
       font-family: 'Inter Tight', 'Plus Jakarta Sans', sans-serif;
       background: var(--bg);
       color: var(--text-primary);
-      overflow-x: hidden;
       line-height: 1.6;
     }
 
@@ -83,7 +86,7 @@
     .nav-links {
       display: flex;
       align-items: center;
-      gap: 32px;
+      gap: 28px;
       list-style: none;
     }
     .nav-links a {
@@ -95,7 +98,7 @@
     }
     .nav-links a:hover { color: var(--text-primary); }
     .nav-cta {
-      margin-left: 28px;
+      margin-left: 20px;
       background: var(--text-primary);
       color: #fff !important;
       font-size: 13px !important;
@@ -109,10 +112,40 @@
     }
     .nav-cta:hover { opacity: 0.9; transform: scale(1.02); }
 
-    /* ─── SCROLL PROGRESS ─── */
+    /* ─── LIVE TELEMETRY TICKER ─── */
+    .telemetry-ticker {
+      background: rgba(255, 255, 255, 0.8);
+      border-bottom: 1px solid var(--border);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+      padding: 4px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      z-index: 90;
+      backdrop-filter: blur(10px);
+    }
+    .ticker-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ticker-pulse {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: blink 1.5s infinite;
+    }
+
+    /* ─── SCROLL PROGRESS BAR ─── */
     #progress-bar {
       position: fixed;
-      top: 64px; left: 0;
+      top: 88px; left: 0;
       height: 2px;
       background: var(--blue);
       z-index: 99;
@@ -120,7 +153,7 @@
       transform: scaleX(0);
     }
 
-    /* ─── SECTION INDICATOR ─── */
+    /* ─── CONNECTED STORYLINE RAIL WITH VERTICAL SPINE ─── */
     .section-dots {
       position: fixed;
       right: 32px;
@@ -129,8 +162,25 @@
       z-index: 50;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 20px;
       align-items: center;
+    }
+    .rail-spine {
+      position: absolute;
+      top: 8px; bottom: 8px;
+      left: 50%;
+      width: 1.5px;
+      background: rgba(0,0,0,0.1);
+      transform: translateX(-50%);
+      z-index: 1;
+    }
+    .rail-spine-fill {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 0%;
+      background: var(--blue);
+      transition: height 0.3s;
     }
     .dot-item {
       display: flex;
@@ -138,17 +188,20 @@
       align-items: center;
       gap: 6px;
       cursor: pointer;
+      position: relative;
+      z-index: 2;
     }
     .dot {
-      width: 6px; height: 6px;
+      width: 8px; height: 8px;
       border-radius: 50%;
-      background: rgba(0,0,0,0.22);
-      transition: all 0.3s;
+      background: #D4D4D4;
+      border: 2px solid var(--bg);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .dot-item.active .dot {
       background: var(--blue);
-      box-shadow: 0 0 0 3px var(--blue-mid);
-      transform: scale(1.2);
+      box-shadow: 0 0 0 4px var(--blue-mid);
+      transform: scale(1.3);
     }
     .dot-label {
       font-size: 9px;
@@ -167,39 +220,53 @@
       color: var(--blue);
     }
 
-    /* ─── LAYOUT ─── */
+    /* ─── UNIFIED 2-COLUMN LAYOUT ─── */
     .page-wrapper {
-      padding-top: 64px;
-    }
-
-    .scroll-section {
-      min-height: 100vh;
-      display: grid;
-      grid-template-columns: 1fr 1.05fr;
-      align-items: center;
+      padding-top: 88px;
       position: relative;
     }
 
-    /* LEFT CONTENT */
-    .section-content {
-      padding: 80px 48px 80px 80px;
+    .page-layout-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+      max-width: 1440px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* LEFT COLUMN — ALL 5 SECTIONS */
+    .sections-column {
       position: relative;
       z-index: 2;
+      width: 100%;
     }
 
-    /* RIGHT GLOBE COLUMN */
+    .story-section {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 36px 80px 64px;
+      position: relative;
+    }
+
+    /* RIGHT COLUMN — FIXED PERSISTENT GLOBE */
     .globe-column {
       position: relative;
-      height: 100vh;
+      height: 100%;
     }
     .globe-sticky {
-      position: sticky;
-      top: 64px;
-      height: calc(100vh - 64px);
+      position: fixed;
+      top: 88px;
+      right: max(0px, calc((100vw - 1440px) / 2));
+      width: min(52vw, 740px);
+      height: calc(100vh - 88px);
       display: flex;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 10;
     }
 
     /* ─── SECTION LABELS ─── */
@@ -285,11 +352,11 @@
       padding: 13px 26px;
       border-radius: 100px;
       text-decoration: none;
-      transition: opacity 0.2s, transform 0.2s;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
       cursor: pointer;
       border: none;
     }
-    .btn-primary:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.12); }
     
     .btn-secondary {
       display: inline-flex;
@@ -307,7 +374,7 @@
       transition: background 0.2s, transform 0.2s;
       cursor: pointer;
     }
-    .btn-secondary:hover { background: #FAFAFA; transform: translateY(-1px); }
+    .btn-secondary:hover { background: #FAFAFA; transform: translateY(-2px); }
 
     /* ─── METRICS ─── */
     .hero-metrics {
@@ -396,12 +463,70 @@
       line-height: 1.5;
     }
 
+    /* ─── INTERACTIVE SAR SPLIT-SCREEN COMPARISON LENS ─── */
+    .sar-lens-container {
+      position: relative;
+      width: 100%;
+      height: 180px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      background: #111;
+      margin-bottom: 24px;
+      user-select: none;
+      box-shadow: var(--shadow-sm);
+    }
+    .sar-layer {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+    }
+    .sar-before {
+      background: radial-gradient(circle at 50% 50%, #2A3038 0%, #151A20 100%);
+      color: #94A3B8;
+    }
+    .sar-after {
+      background: radial-gradient(circle at 50% 50%, #1E293B 0%, #0F172A 100%);
+      color: #38BDF8;
+      clip-path: polygon(0 0, 50% 0, 50% 100%, 0 100%);
+    }
+    .sar-divider {
+      position: absolute;
+      top: 0; bottom: 0;
+      left: 50%;
+      width: 2px;
+      background: #fff;
+      cursor: ew-resize;
+      box-shadow: 0 0 12px rgba(255,255,255,0.8);
+    }
+    .sar-handle {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: #fff;
+      border: 2px solid var(--blue);
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--blue);
+      box-shadow: var(--shadow-md);
+      cursor: ew-resize;
+    }
+
     /* ─── PIPELINE / FLOW ─── */
     .pipeline {
       display: flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
       opacity: 0;
       transform: translateY(16px);
       flex-wrap: wrap;
@@ -472,6 +597,11 @@
       align-items: center;
       gap: 8px;
       box-shadow: var(--shadow-sm);
+      transition: all 0.2s;
+    }
+    .fusion-item:hover {
+      border-color: var(--blue);
+      transform: translateX(2px);
     }
     .fusion-item-dot {
       width: 6px; height: 6px;
@@ -489,6 +619,7 @@
       letter-spacing: 0.5px;
       box-shadow: var(--shadow-md);
       min-width: 90px;
+      position: relative;
     }
     .fusion-engine-icon {
       font-size: 20px;
@@ -547,49 +678,85 @@
       flex-shrink: 0;
     }
 
+    /* ─── 3 PRELOADED SCENARIO QUICK-LAUNCHERS ─── */
+    .scenarios-section {
+      padding: 60px 48px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .scenario-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      max-width: 1300px;
+      margin: 32px auto 0;
+    }
+    .sc-card {
+      background: #FAFAFA;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-decoration: none;
+      color: var(--text-primary);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s;
+    }
+    .sc-card:hover {
+      background: #fff;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-4px);
+      border-color: var(--blue);
+    }
+
     /* ─── GLOBE SVG CONTAINER ─── */
     #globe-svg-wrapper {
       position: relative;
-      width: 520px;
-      height: 520px;
+      width: 530px;
+      height: 530px;
+      pointer-events: auto;
     }
     #globe-svg {
       width: 100%;
       height: 100%;
       overflow: visible;
-      filter: drop-shadow(0 20px 48px rgba(0,0,0,0.10));
+      filter: drop-shadow(0 24px 50px rgba(0,0,0,0.12));
+      transform-origin: 260px 260px;
     }
 
     /* Floating overlay cards on globe */
     .globe-card {
       position: absolute;
       background: rgba(255,255,255,0.96);
-      backdrop-filter: blur(14px);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--border-strong);
       border-radius: var(--radius);
-      padding: 12px 16px;
+      padding: 13px 18px;
       box-shadow: var(--shadow-lg);
       font-size: 12px;
-      min-width: 180px;
+      min-width: 190px;
       opacity: 0;
       transform: scale(0.9) translateY(8px);
-      transition: opacity 0.4s, transform 0.4s;
-      pointer-events: none;
-      z-index: 10;
+      transition: opacity 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      pointer-events: auto;
+      z-index: 20;
     }
     .globe-card-title {
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 700;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       text-transform: uppercase;
       color: var(--text-tertiary);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .globe-card-value {
-      font-size: 13.5px;
-      font-weight: 700;
+      font-size: 14px;
+      font-weight: 800;
       color: var(--text-primary);
       margin-bottom: 4px;
+      letter-spacing: -0.3px;
     }
     .globe-card-sub {
       font-size: 11px;
@@ -608,20 +775,39 @@
     .badge-blue { background: var(--blue-light); color: var(--blue); }
     .badge-amber { background: rgba(217,119,6,0.08); color: #D97706; }
 
+    /* Interactive Vessel Tooltip */
+    #vessel-tooltip {
+      position: absolute;
+      background: rgba(10, 10, 10, 0.92);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      transform: translate(-50%, -120%);
+      transition: opacity 0.2s, transform 0.2s;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
     /* Globe status bar */
     .globe-status {
       position: absolute;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
-      background: rgba(255,255,255,0.94);
-      backdrop-filter: blur(14px);
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(16px);
       border: 1px solid var(--border);
       border-radius: 100px;
-      padding: 6px 18px;
+      padding: 7px 20px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 9px;
       font-size: 11px;
       font-weight: 600;
       color: var(--text-secondary);
@@ -632,24 +818,23 @@
       box-shadow: var(--shadow-sm);
     }
     .status-dot {
-      width: 6px; height: 6px;
+      width: 6.5px; height: 6.5px;
       border-radius: 50%;
       background: #10B981;
       animation: blink 1.5s ease-in-out infinite;
     }
     @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
     }
 
     /* ─── FOOTER ─── */
     footer {
       padding: 48px 80px;
-      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(236,236,236,0.5);
+      background: var(--bg);
     }
     .footer-logo {
       display: flex;
@@ -670,7 +855,27 @@
     .footer-links a:hover { color: var(--text-primary); }
 
     .mono { font-family: 'JetBrains Mono', 'IBM Plex Mono', monospace; }
-    .globe-layer { transition: opacity 0.6s; }
+    .globe-layer { transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Animated current particles */
+    .streamlet {
+      animation: streamFlow 3.5s linear infinite;
+    }
+    @keyframes streamFlow {
+      0% { stroke-dashoffset: 24; opacity: 0.2; }
+      50% { opacity: 0.7; }
+      100% { stroke-dashoffset: -24; opacity: 0.2; }
+    }
+
+    /* Phased Array Radar Pulse */
+    .radar-pulse-ring {
+      animation: radarExpand 2.4s infinite ease-out;
+      transform-origin: 202px 145px;
+    }
+    @keyframes radarExpand {
+      0% { r: 10; opacity: 0.8; }
+      100% { r: 120; opacity: 0; }
+    }
   </style>
 </head>
 <body>
@@ -691,16 +896,36 @@
     <li><a href="#section-2">Data Ingestion</a></li>
     <li><a href="#section-3">Detection</a></li>
     <li><a href="#section-4">AI Fusion</a></li>
-    <li><a href="#section-5">Action</a></li>
+    <li><a href="#scenarios">Scenarios</a></li>
     <li><a href="/c2" style="font-weight: 700; color: #2563EB;">Live C2 Console</a></li>
     <li><a href="/c2" class="nav-cta">Launch C2 Platform →</a></li>
   </ul>
 </nav>
 
+<!-- ──────────────────────── LIVE TELEMETRY TICKER ──────────────────────── -->
+<div class="telemetry-ticker">
+  <div class="ticker-pill">
+    <span class="ticker-pulse"></span>
+    <span>CONSTELLATION: SENTINEL-1A/B (VV+VH)</span>
+  </div>
+  <div class="ticker-pill">
+    <span>LATENCY: <b>38ms</b></span>
+  </div>
+  <div class="ticker-pill">
+    <span>LOOKALIKES FILTERED: <b>14/14</b></span>
+  </div>
+  <div class="ticker-pill">
+    <span>PEAK CONFIDENCE: <b style="color:#2563EB;">96.8%</b></span>
+  </div>
+</div>
+
 <div id="progress-bar"></div>
 
-<!-- ──────────────────────── SECTION DOTS ──────────────────────── -->
+<!-- ──────────────────────── CONNECTED STORYLINE RAIL ──────────────────────── -->
 <div class="section-dots">
+  <div class="rail-spine">
+    <div class="rail-spine-fill" id="rail-fill"></div>
+  </div>
   <div class="dot-item active" data-section="1">
     <div class="dot"></div>
     <div class="dot-label">Overview</div>
@@ -726,473 +951,616 @@
 <!-- ──────────────────────── PAGE CONTENT ──────────────────────── -->
 <div class="page-wrapper">
 
-<!-- ─── SECTION 1: HERO ─── -->
-<section id="section-1" class="scroll-section">
-  <div class="section-content">
-    <p class="hero-eyebrow" id="eyebrow-1">AI-Powered Maritime Domain Awareness</p>
-    <h1 class="hero-title" id="hero-title">SEALENS</h1>
-    <p class="hero-subtitle" id="hero-subtitle">See a Safer Ocean World</p>
-    <p class="hero-desc" id="hero-desc">
-      Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, assess risks, and generate actionable maritime insights.
-    </p>
-    <div class="hero-buttons" id="hero-btns">
-      <a href="/c2" class="btn-primary">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-        Launch C2 Platform
-      </a>
-      <a href="#section-2" class="btn-secondary">
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#0A0A0A" stroke-width="1.5"/><path d="M5.5 5.5l3 1.5-3 1.5V5.5z" fill="#0A0A0A"/></svg>
-        Explore System
-      </a>
-    </div>
-    <div class="hero-metrics" id="hero-metrics">
-      <div class="metric-item">
-        <span class="metric-value">200M+</span>
-        <span class="metric-label">km² ocean coverage</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-value">Real-time</span>
-        <span class="metric-label">Vessel tracking</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-value">AI-powered</span>
-        <span class="metric-label">Actionable intelligence</span>
-      </div>
-    </div>
-  </div>
-  <div class="globe-column">
-    <div class="globe-sticky">
-      <!-- THE MAIN 2D VECTOR GLOBE SVG -->
-      <div id="globe-svg-wrapper">
-        <svg id="globe-svg" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <radialGradient id="oceanGrad" cx="42%" cy="38%" r="58%">
-              <stop offset="0%" stop-color="#E8ECEF"/>
-              <stop offset="60%" stop-color="#D6DDE4"/>
-              <stop offset="100%" stop-color="#B8C4CE"/>
-            </radialGradient>
-            <radialGradient id="landGrad" cx="40%" cy="35%" r="65%">
-              <stop offset="0%" stop-color="#C8CDD2"/>
-              <stop offset="100%" stop-color="#A8B0B8"/>
-            </radialGradient>
-            <radialGradient id="globeShine" cx="35%" cy="28%" r="50%">
-              <stop offset="0%" stop-color="rgba(255,255,255,0.6)"/>
-              <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
-            </radialGradient>
-            <radialGradient id="globeShadow" cx="50%" cy="50%" r="50%">
-              <stop offset="70%" stop-color="rgba(0,0,0,0)"/>
-              <stop offset="100%" stop-color="rgba(0,0,0,0.12)"/>
-            </radialGradient>
-            <clipPath id="globeClip">
-              <circle cx="260" cy="260" r="210"/>
-            </clipPath>
-            <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#2563EB" stop-opacity="0.3"/>
-              <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
-            </linearGradient>
-            <filter id="glow-sm">
-              <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <filter id="globe-shadow" x="-10%" y="-10%" width="130%" height="130%">
-              <feDropShadow dx="0" dy="12" stdDeviation="20" flood-color="rgba(0,0,0,0.12)"/>
-            </filter>
-            <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
-              <path d="M0,0 L0,6 L6,3 z" fill="#2563EB"/>
-            </marker>
-          </defs>
+  <!-- UNIFIED 2-COLUMN STORYTELLING GRID -->
+  <main class="page-layout-grid">
 
-          <!-- GLOBE MAIN SPHERE -->
-          <g id="globe-main" filter="url(#globe-shadow)">
-            <circle cx="260" cy="260" r="210" fill="url(#oceanGrad)"/>
+    <!-- ─── LEFT COLUMN: ALL 5 SECTIONS ─── -->
+    <div class="sections-column">
+      
+      <!-- ─── SECTION 1: HERO ─── -->
+      <section id="section-1" class="story-section">
+        <p class="hero-eyebrow" id="eyebrow-1">AI-Powered Maritime Domain Awareness</p>
+        <h1 class="hero-title" id="hero-title">SEALENS</h1>
+        <p class="hero-subtitle" id="hero-subtitle">See a Safer Ocean World</p>
+        <p class="hero-desc" id="hero-desc">
+          Sealens integrates Sentinel-1 SAR imagery, AIS feeds, and environmental intelligence to detect suspicious maritime activity, identify dark vessels, assess risks, and generate actionable maritime insights.
+        </p>
+        <div class="hero-buttons" id="hero-btns">
+          <a href="/c2" class="btn-primary">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+            Launch C2 Platform
+          </a>
+          <a href="#scenarios" class="btn-secondary">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="#0A0A0A" stroke-width="1.5"/><path d="M5.5 5.5l3 1.5-3 1.5V5.5z" fill="#0A0A0A"/></svg>
+            Explore Scenarios
+          </a>
+        </div>
+        <div class="hero-metrics" id="hero-metrics">
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="200" data-suffix="M+">0M+</span>
+            <span class="metric-label">km² ocean coverage</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value">Real-time</span>
+            <span class="metric-label">Vessel tracking</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value">AI-powered</span>
+            <span class="metric-label">Actionable intelligence</span>
+          </div>
+        </div>
+      </section>
 
-            <!-- Lat/lon grid -->
-            <g clip-path="url(#globeClip)" opacity="0.18" stroke="#7A8A96" stroke-width="0.6" fill="none">
-              <ellipse cx="260" cy="260" rx="210" ry="60"/>
-              <ellipse cx="260" cy="260" rx="210" ry="120"/>
-              <ellipse cx="260" cy="260" rx="210" ry="170"/>
-              <ellipse cx="260" cy="260" rx="60" ry="210"/>
-              <ellipse cx="260" cy="260" rx="120" ry="210"/>
-              <ellipse cx="260" cy="260" rx="170" ry="210"/>
-            </g>
+      <!-- ─── SECTION 2: MULTI-SOURCE INPUTS ─── -->
+      <section id="section-2" class="story-section">
+        <div class="section-label" id="label-2">
+          <span class="section-label-num">02</span>
+          Multi-Source Inputs
+        </div>
+        <h2 class="section-title" id="title-2">Multi-Source<br>Inputs</h2>
+        <p class="section-desc" id="desc-2">Combining diverse maritime datasets into a unified operational picture — from high-resolution radar to oceanographic drift modeling.</p>
 
-            <!-- CONTINENTS -->
-            <g id="continents" clip-path="url(#globeClip)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.6)" stroke-width="0.8">
-              <!-- Europe -->
-              <path d="M238 140 L248 135 L262 130 L275 132 L285 138 L288 148 L282 158 L278 165 L268 172 L255 175 L245 170 L237 162 L234 152 Z"/>
-              <!-- Africa -->
-              <path d="M245 188 L258 182 L272 184 L285 192 L292 208 L295 228 L290 250 L282 270 L270 285 L258 290 L247 285 L238 268 L233 248 L232 228 L235 208 Z"/>
-              <!-- Middle East -->
-              <path d="M288 175 L300 172 L315 178 L318 192 L310 205 L295 210 L285 205 L282 195 Z"/>
-              <!-- India -->
-              <path d="M315 180 L330 178 L342 185 L346 200 L340 215 L325 225 L318 215 L312 200 Z"/>
-              <!-- East & Southeast Asia -->
-              <path d="M345 195 L360 192 L370 200 L368 215 L355 222 L344 218 L340 205 Z"/>
-              <path d="M355 155 L378 148 L395 155 L400 170 L392 185 L375 190 L360 185 L352 172 Z"/>
-              <!-- Australia -->
-              <path d="M362 272 L382 265 L400 270 L408 285 L405 305 L390 318 L370 320 L355 310 L348 295 L352 278 Z"/>
-              <!-- Americas -->
-              <path d="M95 130 L120 120 L145 122 L165 132 L178 150 L175 172 L162 188 L145 196 L122 195 L105 182 L92 162 Z"/>
-              <path d="M148 232 L165 225 L180 232 L188 252 L185 278 L172 302 L155 318 L140 315 L130 295 L128 268 Z"/>
-            </g>
-
-            <circle cx="260" cy="260" r="210" fill="url(#globeShine)"/>
-            <circle cx="260" cy="260" r="210" fill="url(#globeShadow)"/>
-          </g>
-
-          <!-- ═════ LAYER 1: AIS ROUTES + CURRENTS ═════ -->
-          <g id="layer-ais" class="globe-layer" opacity="1">
-            <g clip-path="url(#globeClip)" fill="none">
-              <path d="M300 192 Q330 195 350 200 Q370 205 380 215" stroke="#2563EB" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>
-              <path d="M295 220 Q320 225 345 230 Q362 235 370 245" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.5"/>
-              <path d="M175 175 Q195 185 220 188 Q240 190 255 188" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.4"/>
-            </g>
-            <!-- Orbit -->
-            <g clip-path="url(#globeClip)" fill="none">
-              <ellipse cx="260" cy="240" rx="200" ry="80" stroke="#2563EB" stroke-width="1" stroke-dasharray="6 4" opacity="0.35" transform="rotate(-25 260 240)"/>
-            </g>
-            <!-- Vessels -->
-            <g transform="translate(340, 202)">
-              <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.9"/>
-            </g>
-            <g transform="translate(230, 190)">
-              <polygon points="0,-6 3.5,4.5 0,2.5 -3.5,4.5" fill="#2563EB" opacity="0.75"/>
-            </g>
-            <!-- Satellite -->
-            <g id="satellite-hero" transform="translate(170, 120)" opacity="0.9">
-              <rect x="-8" y="-4" width="16" height="8" rx="2" fill="#2563EB"/>
-              <rect x="-18" y="-1.5" width="8" height="3" rx="1" fill="#2563EB" opacity="0.7"/>
-              <rect x="10" y="-1.5" width="8" height="3" rx="1" fill="#2563EB" opacity="0.7"/>
-              <circle cx="0" cy="0" r="2" fill="white"/>
-            </g>
-          </g>
-
-          <!-- ═════ LAYER 2: SATELLITE SCANNING BEAM ═════ -->
-          <g id="layer-scan" class="globe-layer" opacity="0">
-            <g clip-path="url(#globeClip)">
-              <path d="M202 150 L170 250 L230 250 Z" fill="url(#beamGrad)" opacity="0.85"/>
-              <line x1="170" y1="250" x2="230" y2="250" stroke="#2563EB" stroke-width="2" opacity="0.6"/>
-              <circle cx="215" cy="240" r="4" fill="#2563EB" opacity="0.85"/>
-              <circle cx="198" cy="255" r="3.5" fill="#DC2626" opacity="0.9"/>
-            </g>
-          </g>
-
-          <!-- ═════ LAYER 3: DETECTION ZOOM ═════ -->
-          <g id="layer-detect" class="globe-layer" opacity="0">
-            <g clip-path="url(#globeClip)">
-              <rect x="305" y="238" width="35" height="25" rx="2" fill="none" stroke="#DC2626" stroke-width="1.8" stroke-dasharray="3 2" opacity="0.9"/>
-              <circle cx="322" cy="250" r="5.5" fill="#DC2626"/>
-              <polygon points="295,255 298,265 292,265" fill="#2563EB" opacity="0.7"/>
-            </g>
-          </g>
-
-          <!-- ═════ LAYER 4: ANALYTICS & FUSION ═════ -->
-          <g id="layer-analytics" class="globe-layer" opacity="0">
-            <g clip-path="url(#globeClip)" fill="none">
-              <path d="M260 195 Q280 210 300 225 Q318 238 322 250" stroke="#8A8A8A" stroke-width="1.5" stroke-dasharray="5 3"/>
-              <path d="M322 250 Q330 265 335 280 Q340 295 338 310" stroke="#2563EB" stroke-width="2" stroke-dasharray="6 3" marker-end="url(#arrowBlue)"/>
-              <circle cx="322" cy="250" r="6" fill="#DC2626"/>
-            </g>
-          </g>
-
-          <!-- ═════ LAYER 5: INTERCEPT ═════ -->
-          <g id="layer-intercept" class="globe-layer" opacity="0">
-            <g clip-path="url(#globeClip)">
-              <circle cx="338" cy="308" r="7" fill="#DC2626"/>
-              <polygon points="290,340 294,355 286,355" fill="#2563EB"/>
-              <path d="M290 348 Q310 340 326 322 Q332 315 338 308" stroke="#2563EB" stroke-width="2" stroke-dasharray="6 3" fill="none" marker-end="url(#arrowBlue)"/>
-            </g>
-          </g>
-
-          <circle cx="260" cy="260" r="214" fill="none" stroke="rgba(180,190,200,0.3)" stroke-width="2"/>
-        </svg>
-
-        <!-- Floating Cards -->
-        <div class="globe-card" id="card-ais" style="top: 24px; right: -24px;">
-          <div class="globe-card-title">AIS Live Feed</div>
-          <div class="globe-card-value">94,280 vessels</div>
-          <div class="globe-card-sub">Tracked globally · <span class="mono" style="font-size:10px;">06:00 UTC</span></div>
-          <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">● Real-Time Feed</span></div>
+        <div class="cards-grid" id="cards-2">
+          <div class="input-card">
+            <div class="card-icon blue">🛰️</div>
+            <div class="card-title">Sentinel-1 SAR</div>
+            <div class="card-sub">High-resolution C-Band radar imagery · 10m resolution · All-weather pass</div>
+          </div>
+          <div class="input-card">
+            <div class="card-icon blue">🚢</div>
+            <div class="card-title">AIS Vessel Feeds</div>
+            <div class="card-sub">Live transponder feeds · 12M+ msgs/day · Global track correlation</div>
+          </div>
+          <div class="input-card">
+            <div class="card-icon grey">💨</div>
+            <div class="card-title">Wind &amp; Current Data</div>
+            <div class="card-sub">MetOcean feeds · ERA5 reanalysis · CMEMS hydrodynamic drift</div>
+          </div>
+          <div class="input-card">
+            <div class="card-icon grey">📊</div>
+            <div class="card-title">Environmental Data</div>
+            <div class="card-sub">Sea surface temperature, wave height, marine sanctuaries</div>
+          </div>
         </div>
 
-        <div class="globe-card" id="card-scan" style="top: 20px; right: -20px;">
-          <div class="globe-card-title">Sentinel-1 SAR</div>
-          <div class="globe-card-value">Scanning Swath</div>
-          <div class="globe-card-sub mono" style="font-size:10px;">250km Width · C-Band Dual-Pol</div>
-          <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">▶ Active Orbit</span></div>
+        <div class="hero-metrics" id="metrics-2">
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="12" data-suffix="M+">0M+</span>
+            <span class="metric-label">AIS messages / day</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value counter" data-target="500" data-suffix="K km²">0K km²</span>
+            <span class="metric-label">Area scanned</span>
+          </div>
+          <div class="metric-item">
+            <span class="metric-value">24/7</span>
+            <span class="metric-label">Global monitoring</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 3: AI PROCESSING & DETECTION ─── -->
+      <section id="section-3" class="story-section">
+        <div class="section-label" id="label-3">
+          <span class="section-label-num">03</span>
+          AI Processing &amp; Detection
+        </div>
+        <h2 class="section-title" id="title-3">AI Processing<br>&amp; Detection</h2>
+        <p class="section-desc" id="desc-3">Transforming raw satellite returns into verifiable vessel detections — drag the slider to compare raw radar vs. AI segmentation.</p>
+
+        <!-- Interactive SAR Wipe Lens -->
+        <div class="sar-lens-container" id="sarLens">
+          <div class="sar-layer sar-before">
+            <div style="text-align:center;">
+              <span style="display:block;font-size:12px;color:#fff;font-weight:700;">RAW SENTINEL-1 SAR</span>
+              <span style="font-size:9.5px;opacity:0.7;">Speckle Noise &amp; Sea Clutter</span>
+            </div>
+          </div>
+          <div class="sar-layer sar-after" id="sarAfter">
+            <div style="text-align:center;">
+              <span style="display:block;font-size:12px;color:#38BDF8;font-weight:700;">PYTORCH U-NET + CFAR</span>
+              <span style="font-size:9.5px;color:#E0F2FE;">Segmented Slick Mask // 92% Conf.</span>
+            </div>
+          </div>
+          <div class="sar-divider" id="sarDivider">
+            <div class="sar-handle">↔</div>
+          </div>
         </div>
 
-        <div class="globe-card" id="card-dark" style="top: 14px; right: -24px;">
-          <div class="globe-card-title" style="color:#DC2626;">⚠ Detection Alert</div>
-          <div class="globe-card-value">Potential Dark Vessel</div>
-          <div class="globe-card-sub mono" style="font-size:10px;">12.346°N  72.118°E</div>
-          <div style="margin-top:8px;"><span class="globe-card-badge badge-red">⚡ Confidence: 92%</span></div>
+        <div class="pipeline" id="pipeline-3">
+          <div class="pipe-step">SAR Image</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">Noise Reduction</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step">Vessel Extraction</div>
+          <span class="pipe-arrow">→</span>
+          <div class="pipe-step highlight">Dark Vessel Detection ⚡</div>
         </div>
 
-        <div class="globe-card" id="card-risk" style="top: 14px; right: -24px;">
-          <div class="globe-card-title" style="color:#D97706;">⚠ AI Risk Engine</div>
-          <div class="globe-card-value" style="font-size:20px;font-weight:900;color:#D97706;">Risk Score: 87%</div>
-          <div class="globe-card-sub">Possible Illegal Activity</div>
-          <div style="margin-top:8px;"><span class="globe-card-badge badge-amber">Drifting · AIS Inactive</span></div>
+        <div class="feature-list" id="features-3">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Speckle noise reduction on raw SAR tiles (Adaptive Lee Filter)
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Vessel extraction with CA-CFAR + PyTorch U-Net deep detection
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            Coastline masking to suppress false alarms
+          </div>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            AIS cross-correlation for dark vessel identification (92% confidence)
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 4: AI FUSION & ANALYTICS ─── -->
+      <section id="section-4" class="story-section">
+        <div class="section-label" id="label-4">
+          <span class="section-label-num">04</span>
+          AI Fusion &amp; Analytics
+        </div>
+        <h2 class="section-title" id="title-4">AI Fusion<br>&amp; Analytics</h2>
+        <p class="section-desc" id="desc-4">Combining multiple maritime data sources to evaluate vessel track history, backtrack drift, and compute dynamic risk scores.</p>
+
+        <div class="fusion-layout" id="fusion-layout">
+          <div class="fusion-inputs">
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#DC2626;"></div>
+              Detection Data
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#2563EB;"></div>
+              AIS History
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#7BA8D4;"></div>
+              Weather Data
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#525252;"></div>
+              Ship Registry
+            </div>
+          </div>
+          <div class="fusion-engine">
+            <span class="fusion-engine-icon">⬡</span>
+            AI Fusion<br>Engine
+          </div>
+          <div class="fusion-outputs">
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Identity Probability
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Drift Backtracking
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Risk Assessment
+            </div>
+            <div class="fusion-item">
+              <div class="fusion-item-dot" style="background:#10B981;"></div>
+              Track Association
+            </div>
+          </div>
         </div>
 
-        <div class="globe-card" id="card-intercept" style="bottom: 50px; right: -24px;">
-          <div class="globe-card-title">📍 C2 Intercept</div>
-          <div class="globe-card-value mono" style="font-size:12px;">14.852°N  73.421°E</div>
-          <div class="globe-card-sub">ETA: 2h 14m · Vectoring</div>
-          <div style="margin-top:8px;"><a href="/c2" style="text-decoration:none;"><span class="globe-card-badge badge-blue">→ Open C2 Map</span></a></div>
+        <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.25);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;" id="risk-stat">
+          <div>
+            <div class="counter" data-target="87" data-suffix="%" style="font-size:28px;font-weight:900;color:#D97706;letter-spacing:-1px;line-height:1;">0%</div>
+            <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Risk Score</div>
+          </div>
+          <div style="width:1px;height:40px;background:rgba(217,119,6,0.2);"></div>
+          <div>
+            <div style="font-size:13.5px;font-weight:700;color:#D97706;margin-bottom:2px;">Possible Illegal Activity</div>
+            <div style="font-size:11.5px;color:var(--text-tertiary);">Unknown Vessel · Drifting · Proximity to Marine Protected Sanctuary</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ─── SECTION 5: ACTIONABLE INTELLIGENCE ─── -->
+      <section id="section-5" class="story-section">
+        <div class="section-label" id="label-5">
+          <span class="section-label-num">05</span>
+          Actionable Output
+        </div>
+        <h2 class="section-title" id="title-5">Actionable<br>Intelligence</h2>
+        <p class="section-desc" id="desc-5">Turning fused insights into mission-critical enforcement outcomes with court-ready dossiers and real-time intercept vectoring.</p>
+
+        <div class="action-cards" id="action-cards">
+          <div class="action-card">
+            <div style="font-size: 22px; margin-bottom: 12px;">📄</div>
+            <div class="action-card-title">MARPOL Forensic Dossier</div>
+            <ul class="action-card-list">
+              <li>Vessel Identity &amp; Registry</li>
+              <li>Detection Timeline</li>
+              <li>Evidence Package</li>
+              <li>Violation Assessment</li>
+            </ul>
+          </div>
+          <div class="action-card">
+            <div style="font-size: 22px; margin-bottom: 12px;">📍</div>
+            <div class="action-card-title">C2 Intercept Map</div>
+            <ul class="action-card-list">
+              <li>Intercept Coordinates</li>
+              <li>Tactical Route</li>
+              <li>Command Network</li>
+              <li>Real-Time Vectoring</li>
+            </ul>
+          </div>
         </div>
 
-        <!-- Globe status bar -->
-        <div class="globe-status" id="globe-status-bar">
-          <div class="status-dot"></div>
-          <span id="globe-status-text">Global Maritime Picture · 94,280 vessels</span>
+        <a href="/c2" class="btn-primary" id="cta-5">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Launch Tactical C2 Center
+        </a>
+      </section>
+
+    </div><!-- end sections-column -->
+
+    <!-- ─── RIGHT COLUMN: SINGLE STICKY GLOBE ACROSS ALL SECTIONS ─── -->
+    <div class="globe-column">
+      <div class="globe-sticky">
+        <div id="globe-svg-wrapper">
+          <div id="vessel-tooltip"></div>
+          <svg id="globe-svg" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <radialGradient id="oceanGrad" cx="38%" cy="32%" r="65%">
+                <stop offset="0%" stop-color="#EFF2F5"/>
+                <stop offset="55%" stop-color="#D9E1E8"/>
+                <stop offset="100%" stop-color="#B2BFCB"/>
+              </radialGradient>
+              <radialGradient id="landGrad" cx="38%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#C5CBD2"/>
+                <stop offset="100%" stop-color="#9EA8B2"/>
+              </radialGradient>
+              <radialGradient id="globeShine" cx="32%" cy="24%" r="48%">
+                <stop offset="0%" stop-color="rgba(255,255,255,0.7)"/>
+                <stop offset="50%" stop-color="rgba(255,255,255,0.15)"/>
+                <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+              </radialGradient>
+              <radialGradient id="globeShadow" cx="50%" cy="50%" r="50%">
+                <stop offset="68%" stop-color="rgba(0,0,0,0)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.14)"/>
+              </radialGradient>
+              <clipPath id="globeClip">
+                <circle cx="260" cy="260" r="210"/>
+              </clipPath>
+              <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#2563EB" stop-opacity="0.38"/>
+                <stop offset="70%" stop-color="#2563EB" stop-opacity="0.12"/>
+                <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
+              </linearGradient>
+              <filter id="glow-sm">
+                <feGaussianBlur stdDeviation="1.8" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glow-red">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="globe-shadow" x="-10%" y="-10%" width="130%" height="130%">
+                <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="rgba(0,0,0,0.14)"/>
+              </filter>
+              <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
+                <path d="M0,0 L0,6 L6,3 z" fill="#2563EB"/>
+              </marker>
+            </defs>
+
+            <!-- GLOBE MAIN SPHERE -->
+            <g id="globe-main" filter="url(#globe-shadow)">
+              <circle cx="260" cy="260" r="210" fill="url(#oceanGrad)"/>
+
+              <!-- Ocean Lagrangian Current Streamlets -->
+              <g clip-path="url(#globeClip)" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="8 16" opacity="0.4">
+                <path class="streamlet" d="M220 230 Q250 220 280 235 Q310 250 340 240"/>
+                <path class="streamlet" d="M200 250 Q230 245 260 260 Q290 270 320 265" style="animation-delay:-1.2s;"/>
+                <path class="streamlet" d="M280 200 Q310 210 330 225 Q350 235 370 230" style="animation-delay:-2.1s;"/>
+                <path class="streamlet" d="M160 210 Q190 220 220 215" style="animation-delay:-0.5s;"/>
+              </g>
+
+              <!-- Lat/lon curved grid lines -->
+              <g id="globe-grid" clip-path="url(#globeClip)" opacity="0.18" stroke="#687B8A" stroke-width="0.75" fill="none">
+                <ellipse cx="260" cy="260" rx="210" ry="50"/>
+                <ellipse cx="260" cy="260" rx="210" ry="110"/>
+                <ellipse cx="260" cy="260" rx="210" ry="165"/>
+                <ellipse cx="260" cy="260" rx="55" ry="210"/>
+                <ellipse cx="260" cy="260" rx="115" ry="210"/>
+                <ellipse cx="260" cy="260" rx="165" ry="210"/>
+              </g>
+
+              <!-- CONTINENTS -->
+              <g id="continents" clip-path="url(#globeClip)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.7)" stroke-width="0.75">
+                <!-- Europe & Mediterranean -->
+                <path d="M235 142 L244 133 L256 128 L272 130 L284 136 L286 146 L280 156 L274 162 L266 170 L252 173 L242 168 L235 158 Z"/>
+                <path d="M263 118 L270 110 L277 114 L278 123 L272 130 Z"/>
+                <path d="M218 142 L226 136 L230 144 L225 152 L218 150 Z"/>
+
+                <!-- Africa -->
+                <path d="M242 186 L256 180 L270 182 L284 190 L292 206 L296 226 L291 248 L283 268 L271 284 L258 288 L246 283 L236 266 L230 246 L229 226 L233 206 Z"/>
+                <path d="M298 252 L302 248 L305 258 L302 266 L298 262 Z"/>
+
+                <!-- Middle East & Arabian Peninsula -->
+                <path d="M286 173 L298 170 L312 176 L315 190 L308 203 L293 208 L284 203 L281 192 Z"/>
+
+                <!-- Indian Subcontinent & Bay of Bengal -->
+                <path d="M312 178 L328 176 L340 183 L344 198 L338 214 L323 224 L316 214 L310 198 Z"/>
+                <path d="M328 228 L332 226 L333 232 L329 234 Z"/>
+
+                <!-- Southeast Asia & Malay Archipelago -->
+                <path d="M344 193 L358 190 L368 198 L366 213 L353 220 L342 216 L338 203 Z"/>
+                <path d="M352 222 L364 218 L370 224 L363 231 L352 227 Z"/>
+                <path d="M374 218 L386 215 L391 222 L381 228 Z"/>
+
+                <!-- Australia -->
+                <path d="M360 270 L380 263 L398 268 L406 283 L403 303 L388 316 L368 318 L353 308 L346 293 L350 276 Z"/>
+
+                <!-- East Asia (China, Japan, Korea) -->
+                <path d="M352 153 L375 146 L392 153 L397 168 L389 183 L372 188 L357 183 L349 170 Z"/>
+                <path d="M396 153 L403 146 L410 156 L404 168 L396 163 Z"/>
+
+                <!-- Americas (North & South) -->
+                <path d="M92 128 L118 118 L142 120 L162 130 L175 148 L172 170 L159 186 L142 194 L119 193 L102 180 L89 160 Z"/>
+                <path d="M145 230 L162 223 L177 230 L185 250 L182 276 L169 300 L152 316 L137 313 L127 293 L125 266 Z"/>
+              </g>
+
+              <!-- 3D Specular Lighting & Depth Gradient -->
+              <circle cx="260" cy="260" r="210" fill="url(#globeShine)"/>
+              <circle cx="260" cy="260" r="210" fill="url(#globeShadow)"/>
+            </g>
+
+            <!-- ═════ LAYER 1: AIS ROUTES + REAL-TIME FLEET ═════ -->
+            <g id="layer-ais" class="globe-layer" opacity="1">
+              <g clip-path="url(#globeClip)" fill="none">
+                <path d="M298 190 Q325 198 348 202 Q368 208 382 216" stroke="#2563EB" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.75"/>
+                <path d="M290 224 Q318 228 342 232 Q360 236 368 246" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.6"/>
+                <path d="M172 173 Q193 183 218 186 Q238 188 252 186" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.5"/>
+              </g>
+
+              <!-- Satellite Orbital Arc -->
+              <g clip-path="url(#globeClip)" fill="none">
+                <ellipse cx="260" cy="240" rx="205" ry="82" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="7 5" opacity="0.4" transform="rotate(-25 260 240)"/>
+              </g>
+
+              <!-- Vessel Blips with Pulse Rings -->
+              <g class="vessel-target" data-name="CMA CGM Mumbai" data-info="Speed: 19.4 kn · AIS: Active" transform="translate(340, 202)" style="cursor:pointer;">
+                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.95" filter="url(#glow-sm)"/>
+                <circle cx="0" cy="0" r="9" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.5"/>
+              </g>
+              <g class="vessel-target" data-name="Ever Ace" data-info="Speed: 17.8 kn · AIS: Active" transform="translate(230, 190)" style="cursor:pointer;">
+                <polygon points="0,-6 3.5,4.5 0,2.5 -3.5,4.5" fill="#2563EB" opacity="0.8"/>
+              </g>
+              <g class="vessel-target" data-name="MT Ocean Titan" data-info="Speed: 12.1 kn · AIS: Active" transform="translate(305, 222)" style="cursor:pointer;">
+                <polygon points="0,-6 3.5,4.5 0,2.5 -3.5,4.5" fill="#2563EB" opacity="0.8"/>
+              </g>
+
+              <!-- Orbiting Sentinel-1 Satellite Icon -->
+              <g id="satellite-hero" class="vessel-target" data-name="Sentinel-1 SAR" data-info="C-Band Dual-Pol · 10m Res" transform="translate(170, 120)" opacity="0.95" style="cursor:pointer;">
+                <rect x="-9" y="-5" width="18" height="10" rx="2.5" fill="#1A1A1A"/>
+                <rect x="-19" y="-2" width="9" height="4" rx="1" fill="#2563EB" opacity="0.9"/>
+                <rect x="10" y="-2" width="9" height="4" rx="1" fill="#2563EB" opacity="0.9"/>
+                <circle cx="0" cy="0" r="2.5" fill="white"/>
+                <circle cx="0" cy="0" r="1.2" fill="#2563EB"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 2: SATELLITE SCANNING BEAM & RADAR WAVE ═════ -->
+            <g id="layer-scan" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Phased-Array Radar Wave Rings -->
+                <circle cx="202" cy="145" r="20" class="radar-pulse-ring" fill="none" stroke="#2563EB" stroke-width="1.2"/>
+                
+                <!-- Phased-Array Radar Cone -->
+                <path d="M202 145 L155 255 L245 255 Z" fill="url(#beamGrad)" opacity="0.9"/>
+                <line x1="155" y1="255" x2="245" y2="255" stroke="#2563EB" stroke-width="2.2" opacity="0.75" filter="url(#glow-sm)"/>
+                
+                <!-- Swath Scan Footprint Grid -->
+                <ellipse cx="200" cy="255" rx="45" ry="12" fill="rgba(37,99,235,0.12)" stroke="#2563EB" stroke-width="0.8" stroke-dasharray="3 2"/>
+                
+                <!-- Discovered Radar Targets -->
+                <circle cx="218" cy="242" r="4.5" fill="#2563EB" opacity="0.9" filter="url(#glow-sm)"/>
+                <circle cx="188" cy="258" r="4" fill="#DC2626" opacity="0.95" filter="url(#glow-red)"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 3: DETECTION ZOOM & TARGET LOCK ═════ -->
+            <g id="layer-detect" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Target Reticle & Brackets -->
+                <g class="target-bracket">
+                  <path d="M302 240 L302 232 L310 232" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M334 232 L342 232 L342 240" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M302 260 L302 268 L310 268" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M334 268 L342 268 L342 260" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                </g>
+
+                <!-- Dark Vessel Red Blip -->
+                <circle cx="322" cy="250" r="6" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="322,238 327,252 322,249 317,252" fill="#DC2626"/>
+
+                <!-- Pulse Rings -->
+                <circle cx="322" cy="250" r="12" fill="none" stroke="#DC2626" stroke-width="1.2" opacity="0.6"/>
+                <circle cx="322" cy="250" r="22" fill="none" stroke="#DC2626" stroke-width="0.8" stroke-dasharray="4 3" opacity="0.35"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 4: ANALYTICS & PARTICLE FLOW ═════ -->
+            <g id="layer-analytics" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)" fill="none">
+                <!-- Historical AIS Drift Path (Grey Dashed) -->
+                <path d="M255 190 Q278 208 298 224 Q316 238 322 250" stroke="#737373" stroke-width="2" stroke-dasharray="5 3.5"/>
+                <!-- Predicted Drift Trajectory (Blue Vibrant) -->
+                <path d="M322 250 Q332 268 337 284 Q341 300 338 314" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                
+                <!-- Ocean Surface Flow Streamlines -->
+                <g opacity="0.45">
+                  <path d="M245 268 Q260 266 270 270" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                  <path d="M295 258 Q308 263 316 272" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                </g>
+
+                <circle cx="322" cy="250" r="6.5" fill="#DC2626" filter="url(#glow-red)"/>
+              </g>
+            </g>
+
+            <!-- ═════ LAYER 5: INTERCEPT & COMMAND VECTORING ═════ -->
+            <g id="layer-intercept" class="globe-layer" opacity="0">
+              <g clip-path="url(#globeClip)">
+                <!-- Target Ship -->
+                <circle cx="338" cy="310" r="7" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="338,298 343,312 338,309 333,312" fill="#DC2626"/>
+
+                <!-- Patrol Interceptor Vessel -->
+                <polygon points="288,342 293,356 283,356" fill="#2563EB" filter="url(#glow-sm)"/>
+
+                <!-- Intercept Vectoring Spline -->
+                <path d="M288 348 Q308 340 325 324 Q332 316 338 310" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                
+                <!-- Crosshair reticle -->
+                <circle cx="338" cy="310" r="16" fill="none" stroke="#2563EB" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
+              </g>
+            </g>
+
+            <!-- Atmosphere outer ring -->
+            <circle cx="260" cy="260" r="213" fill="none" stroke="rgba(180,195,210,0.4)" stroke-width="2"/>
+            <circle cx="260" cy="260" r="217" fill="none" stroke="rgba(37,99,235,0.12)" stroke-width="4"/>
+          </svg>
+
+          <!-- Floating HUD Cards -->
+          <div class="globe-card" id="card-ais" style="top: 24px; right: -24px;">
+            <div class="globe-card-title">AIS Fleet Monitoring</div>
+            <div class="globe-card-value">94,280 vessels</div>
+            <div class="globe-card-sub">Tracked globally · <span class="mono" style="font-size:10px;">06:00 UTC</span></div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">● Real-Time Feed</span></div>
+          </div>
+
+          <div class="globe-card" id="card-scan" style="top: 20px; right: -20px;">
+            <div class="globe-card-title">Sentinel-1 SAR Radar</div>
+            <div class="globe-card-value">Active Swath Pass</div>
+            <div class="globe-card-sub mono" style="font-size:10px;">250km Width · C-Band Dual-Pol</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-blue">▶ Live Orbital Sweep</span></div>
+          </div>
+
+          <div class="globe-card" id="card-dark" style="top: 14px; right: -24px;">
+            <div class="globe-card-title" style="color:#DC2626;">⚠ Detection Alert</div>
+            <div class="globe-card-value">Potential Dark Vessel</div>
+            <div class="globe-card-sub mono" style="font-size:10px;">12.346°N  72.118°E</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-red">⚡ Conf: 92% // AIS Off</span></div>
+          </div>
+
+          <div class="globe-card" id="card-risk" style="top: 14px; right: -24px;">
+            <div class="globe-card-title" style="color:#D97706;">⚠ AI Risk Engine</div>
+            <div class="globe-card-value" style="font-size:20px;font-weight:900;color:#D97706;">Risk Score: 87%</div>
+            <div class="globe-card-sub">Possible Illegal Activity</div>
+            <div style="margin-top:8px;"><span class="globe-card-badge badge-amber">Drifting · AIS Inactive</span></div>
+          </div>
+
+          <div class="globe-card" id="card-intercept" style="bottom: 50px; right: -24px;">
+            <div class="globe-card-title">📍 C2 Intercept Vector</div>
+            <div class="globe-card-value mono" style="font-size:12.5px;">14.852°N  73.421°E</div>
+            <div class="globe-card-sub">ETA: 2h 14m · Vectoring</div>
+            <div style="margin-top:8px;"><a href="/c2" style="text-decoration:none;"><span class="globe-card-badge badge-blue">→ Open C2 Tactical Map</span></a></div>
+          </div>
+
+          <!-- Globe status bar -->
+          <div class="globe-status" id="globe-status-bar">
+            <div class="status-dot"></div>
+            <span id="globe-status-text">Global Maritime Picture · 94,280 vessels</span>
+          </div>
         </div>
       </div>
-    </div>
-  </div>
-</section>
+    </div><!-- end globe-column -->
 
-<!-- ─── SECTION 2: MULTI-SOURCE INPUTS ─── -->
-<section id="section-2" class="scroll-section">
-  <div class="section-content">
-    <div class="section-label" id="label-2">
-      <span class="section-label-num">02</span>
-      Multi-Source Inputs
-    </div>
-    <h2 class="section-title" id="title-2">Multi-Source<br>Inputs</h2>
-    <p class="section-desc" id="desc-2">Combining diverse maritime datasets into a unified operational picture — from high-resolution radar to oceanographic drift modeling.</p>
+  </main>
 
-    <div class="cards-grid" id="cards-2">
-      <div class="input-card">
-        <div class="card-icon blue">🛰️</div>
-        <div class="card-title">Sentinel-1 SAR</div>
-        <div class="card-sub">High-resolution C-Band radar imagery · 10m resolution · All-weather</div>
-      </div>
-      <div class="input-card">
-        <div class="card-icon blue">🚢</div>
-        <div class="card-title">AIS Vessel Feeds</div>
-        <div class="card-sub">Live transponder feeds · 12M+ msgs/day · Global track association</div>
-      </div>
-      <div class="input-card">
-        <div class="card-icon grey">💨</div>
-        <div class="card-title">Wind &amp; Current Data</div>
-        <div class="card-sub">MetOcean feeds · ERA5 reanalysis · CMEMS hydrodynamic drift</div>
-      </div>
-      <div class="input-card">
-        <div class="card-icon grey">📊</div>
-        <div class="card-title">Environmental Data</div>
-        <div class="card-sub">Sea surface temperature, wave height, marine sanctuaries</div>
-      </div>
+  <!-- ─── PRELOADED SCENARIO QUICK-LAUNCHERS SECTION ─── -->
+  <section id="scenarios" class="scenarios-section">
+    <div style="max-width:1300px;margin:0 auto;text-align:center;">
+      <span class="section-label-num" style="margin:0 auto 12px;">★</span>
+      <h2 style="font-size:32px;font-weight:800;letter-spacing:-1px;margin-bottom:8px;">Operational Mission Scenarios</h2>
+      <p style="font-size:14px;color:var(--text-secondary);max-width:560px;margin:0 auto;">Launch live end-to-end incident simulations pre-configured with real Sentinel-1 SAR imagery and AIS feeds.</p>
     </div>
 
-    <div class="hero-metrics" id="metrics-2">
-      <div class="metric-item">
-        <span class="metric-value">12M+</span>
-        <span class="metric-label">AIS messages / day</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-value">500K km²</span>
-        <span class="metric-label">Area scanned</span>
-      </div>
-      <div class="metric-item">
-        <span class="metric-value">24/7</span>
-        <span class="metric-label">Global monitoring</span>
-      </div>
-    </div>
-  </div>
-  <div class="globe-column"></div>
-</section>
-
-<!-- ─── SECTION 3: AI PROCESSING & DETECTION ─── -->
-<section id="section-3" class="scroll-section">
-  <div class="section-content">
-    <div class="section-label" id="label-3">
-      <span class="section-label-num">03</span>
-      AI Processing &amp; Detection
-    </div>
-    <h2 class="section-title" id="title-3">AI Processing<br>&amp; Detection</h2>
-    <p class="section-desc" id="desc-3">Transforming raw satellite returns into verifiable vessel detections — unmasking dark vessels operating without transponders.</p>
-
-    <div class="pipeline" id="pipeline-3">
-      <div class="pipe-step">SAR Image</div>
-      <span class="pipe-arrow">→</span>
-      <div class="pipe-step">Noise Reduction</div>
-      <span class="pipe-arrow">→</span>
-      <div class="pipe-step">Vessel Extraction</div>
-      <span class="pipe-arrow">→</span>
-      <div class="pipe-step highlight">Dark Vessel Detection ⚡</div>
-    </div>
-
-    <div class="feature-list" id="features-3">
-      <div class="feature-item">
-        <div class="feature-dot"></div>
-        Speckle noise reduction on raw SAR tiles (Adaptive Lee Filter)
-      </div>
-      <div class="feature-item">
-        <div class="feature-dot"></div>
-        Vessel extraction with CA-CFAR + PyTorch U-Net deep detection
-      </div>
-      <div class="feature-item">
-        <div class="feature-dot"></div>
-        Coastline masking to suppress false alarms
-      </div>
-      <div class="feature-item">
-        <div class="feature-dot"></div>
-        AIS cross-correlation for dark vessel identification (92% confidence)
-      </div>
-    </div>
-
-    <div style="margin-top:28px;" id="detection-stat">
-      <div style="background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.2);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;">
-        <div style="width:38px;height:38px;border-radius:10px;background:rgba(220,38,38,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">⚠</div>
+    <div class="scenario-cards-grid">
+      <a href="/c2?scenario=scenario_alpha_rogue_tanker" class="sc-card">
         <div>
-          <div style="font-size:13.5px;font-weight:700;color:#DC2626;margin-bottom:2px;">Potential Dark Vessel Detected</div>
-          <div class="mono" style="font-size:11px;color:var(--text-tertiary);">12.346°N 72.118°E · Confidence: 92%</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--red);">SCENARIO ALPHA</span>
+            <span class="globe-card-badge badge-red">🚨 Verified Spill</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">The Rogue Tanker</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Arabian Sea · Intentional night bilge discharge with AIS transponder evasion. High radar contrast.</p>
         </div>
-      </div>
+        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
+          <span>Launch Investigation</span>
+          <span>→</span>
+        </div>
+      </a>
+
+      <a href="/c2?scenario=scenario_beta_singapore_strait" class="sc-card">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--amber);">SCENARIO BETA</span>
+            <span class="globe-card-badge badge-amber">⚡ Confluence</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">Singapore Strait Confluence</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Multi-vessel traffic corridor. Reverse drift backtracking eliminates non-culprit container ships.</p>
+        </div>
+        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
+          <span>Launch Investigation</span>
+          <span>→</span>
+        </div>
+      </a>
+
+      <a href="/c2?scenario=scenario_gamma_lookalike" class="sc-card">
+        <div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <span style="font-size:11px;font-family:'JetBrains Mono';font-weight:700;color:var(--emerald);">SCENARIO GAMMA</span>
+            <span class="globe-card-badge" style="background:rgba(16,185,129,0.08);color:#10B981;">✓ False Alarm Filtered</span>
+          </div>
+          <h3 style="font-size:16px;font-weight:800;margin-bottom:6px;">Look-Alike False Alarm</h3>
+          <p style="font-size:12px;color:var(--text-secondary);line-height:1.5;">Bay of Bengal · Low-wind biogenic algal slick automatically rejected by dual-polarization SAR ratio.</p>
+        </div>
+        <div style="margin-top:20px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);padding-top:12px;font-size:11px;font-weight:700;color:var(--blue);">
+          <span>Launch Investigation</span>
+          <span>→</span>
+        </div>
+      </a>
     </div>
-  </div>
-  <div class="globe-column"></div>
-</section>
+  </section>
 
-<!-- ─── SECTION 4: AI FUSION & ANALYTICS ─── -->
-<section id="section-4" class="scroll-section">
-  <div class="section-content">
-    <div class="section-label" id="label-4">
-      <span class="section-label-num">04</span>
-      AI Fusion &amp; Analytics
+  <!-- ─── FOOTER ─── -->
+  <footer>
+    <div class="footer-logo">
+      <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#2563EB" stroke-width="2"/><ellipse cx="14" cy="14" rx="5" ry="12" stroke="#2563EB" stroke-width="1.5"/><path d="M3 14h22" stroke="#2563EB" stroke-width="1.5"/><circle cx="14" cy="10" r="2" fill="#2563EB"/></svg>
+      Sealens
     </div>
-    <h2 class="section-title" id="title-4">AI Fusion<br>&amp; Analytics</h2>
-    <p class="section-desc" id="desc-4">Combining multiple maritime data sources to evaluate vessel track history, backtrack drift, and compute dynamic risk scores.</p>
-
-    <div class="fusion-layout" id="fusion-layout">
-      <div class="fusion-inputs">
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#DC2626;"></div>
-          Detection Data
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#2563EB;"></div>
-          AIS History
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#7BA8D4;"></div>
-          Weather Data
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#525252;"></div>
-          Ship Registry
-        </div>
-      </div>
-      <div class="fusion-engine">
-        <span class="fusion-engine-icon">⬡</span>
-        AI Fusion<br>Engine
-      </div>
-      <div class="fusion-outputs">
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#10B981;"></div>
-          Identity Probability
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#10B981;"></div>
-          Drift Backtracking
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#10B981;"></div>
-          Risk Assessment
-        </div>
-        <div class="fusion-item">
-          <div class="fusion-item-dot" style="background:#10B981;"></div>
-          Track Association
-        </div>
-      </div>
+    <div class="footer-links">
+      <a href="#section-1">Home</a>
+      <a href="#section-2">Technology</a>
+      <a href="#section-3">Detection</a>
+      <a href="#section-4">Analytics</a>
+      <a href="#scenarios">Scenarios</a>
+      <a href="/c2">C2 Operations</a>
     </div>
-
-    <div style="background:rgba(217,119,6,0.06);border:1px solid rgba(217,119,6,0.25);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;" id="risk-stat">
-      <div>
-        <div style="font-size:28px;font-weight:900;color:#D97706;letter-spacing:-1px;line-height:1;">87%</div>
-        <div style="font-size:10px;color:var(--text-tertiary);font-weight:700;text-transform:uppercase;letter-spacing:1px;">Risk Score</div>
-      </div>
-      <div style="width:1px;height:40px;background:rgba(217,119,6,0.2);"></div>
-      <div>
-        <div style="font-size:13.5px;font-weight:700;color:#D97706;margin-bottom:2px;">Possible Illegal Activity</div>
-        <div style="font-size:11.5px;color:var(--text-tertiary);">Unknown Vessel · Drifting · Proximity to Marine Protected Sanctuary</div>
-      </div>
+    <div style="font-size: 12px; color: var(--text-tertiary);">
+      Smart India Hackathon #143 // NTRO
     </div>
-  </div>
-  <div class="globe-column"></div>
-</section>
-
-<!-- ─── SECTION 5: ACTIONABLE INTELLIGENCE ─── -->
-<section id="section-5" class="scroll-section">
-  <div class="section-content">
-    <div class="section-label" id="label-5">
-      <span class="section-label-num">05</span>
-      Actionable Output
-    </div>
-    <h2 class="section-title" id="title-5">Actionable<br>Intelligence</h2>
-    <p class="section-desc" id="desc-5">Turning fused insights into mission-critical enforcement outcomes with court-ready dossiers and real-time intercept vectoring.</p>
-
-    <div class="action-cards" id="action-cards">
-      <div class="action-card">
-        <div style="font-size: 22px; margin-bottom: 12px;">📄</div>
-        <div class="action-card-title">MARPOL Forensic Dossier</div>
-        <ul class="action-card-list">
-          <li>Vessel Identity &amp; Registry</li>
-          <li>Detection Timeline</li>
-          <li>Evidence Package</li>
-          <li>Violation Assessment</li>
-        </ul>
-      </div>
-      <div class="action-card">
-        <div style="font-size: 22px; margin-bottom: 12px;">📍</div>
-        <div class="action-card-title">C2 Intercept Map</div>
-        <ul class="action-card-list">
-          <li>Intercept Coordinates</li>
-          <li>Tactical Route</li>
-          <li>Command Network</li>
-          <li>Real-Time Vectoring</li>
-        </ul>
-      </div>
-    </div>
-
-    <a href="/c2" class="btn-primary" id="cta-5">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6" stroke="white" stroke-width="1.5"/><path d="M5 7h4M7 5l2 2-2 2" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg>
-      Launch Tactical C2 Center
-    </a>
-  </div>
-  <div class="globe-column"></div>
-</section>
-
-<!-- ─── FOOTER ─── -->
-<footer>
-  <div class="footer-logo">
-    <svg width="22" height="22" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="#2563EB" stroke-width="2"/><ellipse cx="14" cy="14" rx="5" ry="12" stroke="#2563EB" stroke-width="1.5"/><path d="M3 14h22" stroke="#2563EB" stroke-width="1.5"/><circle cx="14" cy="10" r="2" fill="#2563EB"/></svg>
-    Sealens
-  </div>
-  <div class="footer-links">
-    <a href="#section-1">Home</a>
-    <a href="#section-2">Technology</a>
-    <a href="#section-3">Detection</a>
-    <a href="#section-4">Analytics</a>
-    <a href="/c2">C2 Operations</a>
-  </div>
-  <div style="font-size: 12px; color: var(--text-tertiary);">
-    Smart India Hackathon #143 // NTRO
-  </div>
-</footer>
+  </footer>
 
 </div><!-- end page-wrapper -->
 
 <script>
-// ════════════════════════════════════════════════
-//  SEALENS — GSAP + ScrollTrigger Globe Storytelling
-// ════════════════════════════════════════════════
+// ════════════════════════════════════════════════════
+//  SEALENS — ADVANCED GSAP + SCROLLTRIGGER STORYLINE
+// ════════════════════════════════════════════════════
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Progress Bar
+// ─── SCROLL PROGRESS BAR & RAIL SPINE FILL ───
 gsap.to('#progress-bar', {
   scaleX: 1,
   ease: 'none',
@@ -1200,12 +1568,15 @@ gsap.to('#progress-bar', {
     trigger: 'body',
     start: 'top top',
     end: 'bottom bottom',
-    scrub: true
+    scrub: true,
+    onUpdate: (self) => {
+      document.getElementById('rail-fill').style.height = (self.progress * 100) + '%';
+    }
   }
 });
 
-// Hero animations
-const heroTl = gsap.timeline({ delay: 0.2 });
+// ─── HERO ENTRANCE TIMELINE ───
+const heroTl = gsap.timeline({ delay: 0.15 });
 heroTl
   .to('#eyebrow-1',   { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' })
   .to('#hero-title',  { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, '-=0.3')
@@ -1213,28 +1584,28 @@ heroTl
   .to('#hero-desc',   { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.3')
   .to('#hero-btns',   { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.3')
   .to('#hero-metrics',{ opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, '-=0.2')
-  .to('#card-ais',    { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.5)' }, '-=0.3')
+  .to('#card-ais',    { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.3')
   .to('#globe-status-bar', { opacity: 1, y: 0, duration: 0.4 }, '-=0.2');
 
-// Continents Slow Rotation
-gsap.to('#continents', {
+// ─── CONTINUOUS 360° EARTH ROTATION ───
+gsap.to('#continents, #globe-grid', {
   rotation: 360,
   transformOrigin: '260px 260px',
-  duration: 120,
+  duration: 130,
   ease: 'none',
   repeat: -1
 });
 
-// Globe Floating
+// ─── GLOBE SUBTLE FLOATING PULSE ───
 gsap.to('#globe-svg-wrapper', {
-  y: -10,
-  duration: 4.5,
+  y: -12,
+  duration: 4.8,
   ease: 'sine.inOut',
   yoyo: true,
   repeat: -1
 });
 
-// Layer Control
+// ─── GLOBE STORYTELLING LAYERS & FOCAL ZOOM ───
 const globeLayers = ['layer-ais', 'layer-scan', 'layer-detect', 'layer-analytics', 'layer-intercept'];
 const cards = ['card-ais', 'card-scan', 'card-dark', 'card-risk', 'card-intercept'];
 
@@ -1248,28 +1619,43 @@ function setActiveLayer(layerId) {
 
 function showCard(cardId, statusText) {
   cards.forEach(id => {
-    gsap.to('#' + id, { opacity: 0, scale: 0.9, y: 8, duration: 0.3, ease: 'power2.in' });
+    gsap.to('#' + id, { opacity: 0, scale: 0.9, y: 8, duration: 0.25, ease: 'power2.in' });
   });
-  gsap.to('#' + cardId, { opacity: 1, scale: 1, y: 0, duration: 0.4, ease: 'back.out(1.5)', delay: 0.15 });
+  gsap.to('#' + cardId, { opacity: 1, scale: 1, y: 0, duration: 0.45, ease: 'back.out(1.6)', delay: 0.15 });
   if (statusText) {
     document.getElementById('globe-status-text').textContent = statusText;
   }
 }
 
-const globeScales = { 1: 1.0, 2: 1.08, 3: 1.24, 4: 1.36, 5: 1.45 };
+// Cinematic Camera Focal Configurations (Scale + Center Offset)
+const cameraConfigs = {
+  1: { scale: 1.0,  x: 0,   y: 0 },
+  2: { scale: 1.12, x: -10, y: -15 },
+  3: { scale: 1.35, x: -35, y: -25 }, // Zoom into Indian Ocean / Arabian Sea
+  4: { scale: 1.42, x: -38, y: -30 }, // Focus on drift corridor
+  5: { scale: 1.50, x: -45, y: -35 }  // Tactical intercept focus
+};
 
 function setGlobeSection(n) {
-  const scale = globeScales[n] || 1;
-  gsap.to('#globe-svg', { scale, duration: 1.1, ease: 'power3.inOut', transformOrigin: '50% 50%' });
+  const cfg = cameraConfigs[n] || cameraConfigs[1];
+  
+  gsap.to('#globe-svg', {
+    scale: cfg.scale,
+    x: cfg.x,
+    y: cfg.y,
+    duration: 1.2,
+    ease: 'power3.inOut',
+    transformOrigin: '260px 260px'
+  });
 
   switch(n) {
     case 1:
       setActiveLayer('layer-ais');
-      showCard('card-ais', 'Global AIS · 94,280 vessels');
+      showCard('card-ais', 'Global Maritime Picture · 94,280 vessels');
       break;
     case 2:
       setActiveLayer('layer-scan');
-      showCard('card-scan', 'Sentinel-1 · Active Scanning Cone');
+      showCard('card-scan', 'Sentinel-1 SAR · Active Orbital Swath');
       break;
     case 3:
       setActiveLayer('layer-detect');
@@ -1277,19 +1663,24 @@ function setGlobeSection(n) {
       break;
     case 4:
       setActiveLayer('layer-analytics');
-      showCard('card-risk', 'AI Fusion Engine · Risk: 87%');
+      showCard('card-risk', 'AI Fusion Engine · Risk Score: 87%');
       break;
     case 5:
       setActiveLayer('layer-intercept');
-      showCard('card-intercept', 'C2 Vectoring · Intercept Set');
+      showCard('card-intercept', 'C2 Vectoring · Intercept Locked');
       break;
   }
 
+  // Update nav dots
   document.querySelectorAll('.dot-item').forEach(dot => {
     dot.classList.toggle('active', parseInt(dot.dataset.section) === n);
   });
+
+  // Run numerical counters in this section
+  animateCounters('#section-' + n);
 }
 
+// ─── SCROLLTRIGGER SCENE BINDINGS ───
 function makeContentTrigger(sectionId, elements, sectionNum) {
   const tl = gsap.timeline({
     scrollTrigger: {
@@ -1343,7 +1734,27 @@ makeContentTrigger('section-5', [
   '#cta-5'
 ], 5);
 
-// Dot Navigation
+// ─── NUMERICAL COUNTER ANIMATIONS ───
+function animateCounters(containerSelector) {
+  const counters = document.querySelectorAll(containerSelector + ' .counter');
+  counters.forEach(c => {
+    const target = parseInt(c.dataset.target, 10);
+    const suffix = c.dataset.suffix || '';
+    if (isNaN(target)) return;
+    
+    gsap.fromTo(c, { innerText: 0 }, {
+      innerText: target,
+      duration: 1.5,
+      ease: 'power2.out',
+      snap: { innerText: 1 },
+      onUpdate: function() {
+        c.innerText = Math.round(c.innerText) + suffix;
+      }
+    });
+  });
+}
+
+// ─── DOT NAVIGATION ───
 document.querySelectorAll('.dot-item').forEach(dot => {
   dot.addEventListener('click', () => {
     const n = parseInt(dot.dataset.section);
@@ -1351,14 +1762,72 @@ document.querySelectorAll('.dot-item').forEach(dot => {
   });
 });
 
-// Parallax on mouse move
+// ─── INTERACTIVE HOVER TOOLTIPS ON VESSELS & SATELLITE ───
+const tooltip = document.getElementById('vessel-tooltip');
+const wrapper = document.getElementById('globe-svg-wrapper');
+
+document.querySelectorAll('.vessel-target').forEach(el => {
+  el.addEventListener('mouseenter', (e) => {
+    const name = el.dataset.name || 'Vessel';
+    const info = el.dataset.info || '';
+    tooltip.innerHTML = `<b>${name}</b><br><span style="color:#60A5FA;">${info}</span>`;
+    tooltip.style.opacity = '1';
+  });
+
+  el.addEventListener('mousemove', (e) => {
+    const rect = wrapper.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    tooltip.style.left = x + 'px';
+    tooltip.style.top = y + 'px';
+  });
+
+  el.addEventListener('mouseleave', () => {
+    tooltip.style.opacity = '0';
+  });
+});
+
+// ─── INTERACTIVE SAR SPLIT-SCREEN WIPE LENS DRAGGING ───
+const sarLens = document.getElementById('sarLens');
+const sarAfter = document.getElementById('sarAfter');
+const sarDivider = document.getElementById('sarDivider');
+let isDraggingLens = false;
+
+function updateLens(clientX) {
+  const rect = sarLens.getBoundingClientRect();
+  let x = clientX - rect.left;
+  x = Math.max(0, Math.min(x, rect.width));
+  const pct = (x / rect.width) * 100;
+  sarAfter.style.clipPath = `polygon(0 0, ${pct}% 0, ${pct}% 100%, 0 100%)`;
+  sarDivider.style.left = pct + '%';
+}
+
+sarLens.addEventListener('mousedown', (e) => {
+  isDraggingLens = true;
+  updateLens(e.clientX);
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!isDraggingLens) return;
+  updateLens(e.clientX);
+});
+
+window.addEventListener('mouseup', () => {
+  isDraggingLens = false;
+});
+
+sarLens.addEventListener('touchmove', (e) => {
+  if (e.touches.length > 0) updateLens(e.touches[0].clientX);
+}, { passive: true });
+
+// ─── MOUSE GYROSCOPIC PARALLAX ───
 document.addEventListener('mousemove', (e) => {
-  const xPct = (e.clientX / window.innerWidth - 0.5) * 8;
-  const yPct = (e.clientY / window.innerHeight - 0.5) * 6;
-  gsap.to('#globe-svg', {
+  const xPct = (e.clientX / window.innerWidth - 0.5) * 12;
+  const yPct = (e.clientY / window.innerHeight - 0.5) * 8;
+  gsap.to('#globe-svg-wrapper', {
     x: xPct,
-    y: yPct,
-    duration: 1.5,
+    y: yPct - 6,
+    duration: 1.4,
     ease: 'power2.out',
     overwrite: 'auto'
   });

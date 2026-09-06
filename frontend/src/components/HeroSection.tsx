@@ -53,16 +53,16 @@ export function HeroSection() {
         className="mt-9 flex flex-wrap items-center gap-3"
       >
         <a
-          href="/c2"
+          href="#inputs"
           className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03]"
         >
-          Launch C2 Platform <ArrowRight className="size-4" />
+          Explore Platform <ArrowRight className="size-4" />
         </a>
         <a
-          href="#inputs"
+          href="#detection"
           className="glass-card inline-flex items-center gap-2.5 rounded-full px-6 py-3.5 text-sm font-medium transition-transform hover:scale-[1.03]"
         >
-          <Play className="size-4" /> Explore System
+          <Play className="size-4" /> Watch Demo
         </a>
       </motion.div>
 

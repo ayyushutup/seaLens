@@ -44,10 +44,10 @@ export function IntelligenceSection() {
 
       <Reveal delay={0.2}>
         <a
-          href="/c2"
+          href="#hero"
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03]"
         >
-          Launch Tactical C2 Center <ArrowRight className="size-4" />
+          See It In Action <ArrowRight className="size-4" />
         </a>
       </Reveal>
     </SectionShell>

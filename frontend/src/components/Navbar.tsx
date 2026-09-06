@@ -3,10 +3,9 @@ import { ArrowRight, Globe2 } from "lucide-react";
 const LINKS = [
   { label: "Home", href: "#hero" },
   { label: "Technology", href: "#inputs" },
-  { label: "Detection", href: "#detection" },
-  { label: "Analytics", href: "#fusion" },
-  { label: "Intelligence", href: "#action" },
-  { label: "Live C2 Console", href: "/c2" },
+  { label: "Data", href: "#detection" },
+  { label: "Impact", href: "#fusion" },
+  { label: "About", href: "#action" },
 ];
 
 export function Navbar() {
@@ -14,7 +13,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 border-b border-border/70 bg-background/80 backdrop-blur-xl">
       <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 lg:px-10">
         <a href="#hero" className="flex items-center gap-2.5">
-          <Globe2 className="size-6 text-primary" strokeWidth={1.5} />
+          <Globe2 className="size-6" strokeWidth={1.5} />
           <span className="text-lg font-semibold tracking-tight">Sealens</span>
         </a>
         <ul className="hidden items-center gap-8 md:flex">
@@ -22,11 +21,7 @@ export function Navbar() {
             <li key={l.label}>
               <a
                 href={l.href}
-                className={`text-sm transition-colors ${
-                  l.href.startsWith("/")
-                    ? "font-semibold text-primary hover:text-primary/80"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
+                className="text-sm text-muted-foreground transition-colors hover:text-foreground"
               >
                 {l.label}
               </a>
@@ -34,13 +29,12 @@ export function Navbar() {
           ))}
         </ul>
         <a
-          href="/c2"
+          href="#inputs"
           className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-transform hover:scale-[1.03]"
         >
-          Launch C2 Platform <ArrowRight className="size-4" />
+          Get Started <ArrowRight className="size-4" />
         </a>
       </nav>
     </header>
   );
 }
-

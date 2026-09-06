@@ -714,16 +714,23 @@
     /* ─── GLOBE SVG CONTAINER ─── */
     #globe-svg-wrapper {
       position: relative;
-      width: 530px;
-      height: 530px;
+      width: 540px;
+      height: 540px;
       pointer-events: auto;
     }
     #globe-svg {
       width: 100%;
       height: 100%;
       overflow: visible;
-      filter: drop-shadow(0 24px 50px rgba(0,0,0,0.12));
-      transform-origin: 260px 260px;
+      filter: drop-shadow(0 26px 54px rgba(0,0,0,0.12));
+      transform-origin: 310px 310px;
+    }
+    @keyframes worldStripScroll {
+      0% { transform: translateX(0px); }
+      100% { transform: translateX(-881.6px); }
+    }
+    .world-strip-rotator {
+      animation: worldStripScroll 75s linear infinite;
     }
 
     /* Floating overlay cards on globe */
@@ -1207,7 +1214,7 @@
       <div class="globe-sticky">
         <div id="globe-svg-wrapper">
           <div id="vessel-tooltip"></div>
-          <svg id="globe-svg" viewBox="0 0 520 520" xmlns="http://www.w3.org/2000/svg">
+          <svg id="globe-svg" viewBox="0 0 620 620" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <radialGradient id="oceanGrad" cx="38%" cy="32%" r="65%">
                 <stop offset="0%" stop-color="#EFF2F5"/>
@@ -1225,126 +1232,104 @@
               </radialGradient>
               <radialGradient id="globeShadow" cx="50%" cy="50%" r="50%">
                 <stop offset="68%" stop-color="rgba(0,0,0,0)"/>
-                <stop offset="100%" stop-color="rgba(0,0,0,0.14)"/>
+                <stop offset="100%" stop-color="rgba(0,0,0,0.16)"/>
               </radialGradient>
               <clipPath id="globeClip">
-                <circle cx="260" cy="260" r="210"/>
+                <circle cx="310" cy="310" r="232"/>
               </clipPath>
-              <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <linearGradient id="beamGrad" x1="0%" y1="0%" x2="0%" y2="100%">
                 <stop offset="0%" stop-color="#2563EB" stop-opacity="0.38"/>
                 <stop offset="70%" stop-color="#2563EB" stop-opacity="0.12"/>
                 <stop offset="100%" stop-color="#2563EB" stop-opacity="0.0"/>
               </linearGradient>
               <filter id="glow-sm">
-                <feGaussianBlur stdDeviation="1.8" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
                 <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
               </filter>
               <filter id="glow-red">
-                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feGaussianBlur stdDeviation="3.5" result="coloredBlur"/>
                 <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-              <filter id="globe-shadow" x="-10%" y="-10%" width="130%" height="130%">
-                <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="rgba(0,0,0,0.14)"/>
               </filter>
               <marker id="arrowBlue" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto">
                 <path d="M0,0 L0,6 L6,3 z" fill="#2563EB"/>
               </marker>
             </defs>
 
-            <!-- GLOBE MAIN SPHERE -->
-            <g id="globe-main" filter="url(#globe-shadow)">
-              <circle cx="260" cy="260" r="210" fill="url(#oceanGrad)"/>
+            <!-- Soft Ground Shadow -->
+            <ellipse cx="310" cy="570" rx="168" ry="12" fill="rgba(0,0,0,0.08)"/>
 
-              <!-- Ocean Lagrangian Current Streamlets -->
-              <g clip-path="url(#globeClip)" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="8 16" opacity="0.4">
-                <path class="streamlet" d="M220 230 Q250 220 280 235 Q310 250 340 240"/>
-                <path class="streamlet" d="M200 250 Q230 245 260 260 Q290 270 320 265" style="animation-delay:-1.2s;"/>
-                <path class="streamlet" d="M280 200 Q310 210 330 225 Q350 235 370 230" style="animation-delay:-2.1s;"/>
-                <path class="streamlet" d="M160 210 Q190 220 220 215" style="animation-delay:-0.5s;"/>
-              </g>
+            <!-- Ocean Base Sphere -->
+            <circle cx="310" cy="310" r="232" fill="url(#oceanGrad)"/>
 
-              <!-- Lat/lon curved grid lines -->
-              <g id="globe-grid" clip-path="url(#globeClip)" opacity="0.18" stroke="#687B8A" stroke-width="0.75" fill="none">
-                <ellipse cx="260" cy="260" rx="210" ry="50"/>
-                <ellipse cx="260" cy="260" rx="210" ry="110"/>
-                <ellipse cx="260" cy="260" rx="210" ry="165"/>
-                <ellipse cx="260" cy="260" rx="55" ry="210"/>
-                <ellipse cx="260" cy="260" rx="115" ry="210"/>
-                <ellipse cx="260" cy="260" rx="165" ry="210"/>
-              </g>
-
-              <!-- CONTINENTS -->
-              <g id="continents" clip-path="url(#globeClip)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.7)" stroke-width="0.75">
-                <!-- Europe & Mediterranean -->
-                <path d="M235 142 L244 133 L256 128 L272 130 L284 136 L286 146 L280 156 L274 162 L266 170 L252 173 L242 168 L235 158 Z"/>
-                <path d="M263 118 L270 110 L277 114 L278 123 L272 130 Z"/>
-                <path d="M218 142 L226 136 L230 144 L225 152 L218 150 Z"/>
-
-                <!-- Africa -->
-                <path d="M242 186 L256 180 L270 182 L284 190 L292 206 L296 226 L291 248 L283 268 L271 284 L258 288 L246 283 L236 266 L230 246 L229 226 L233 206 Z"/>
-                <path d="M298 252 L302 248 L305 258 L302 266 L298 262 Z"/>
-
-                <!-- Middle East & Arabian Peninsula -->
-                <path d="M286 173 L298 170 L312 176 L315 190 L308 203 L293 208 L284 203 L281 192 Z"/>
-
-                <!-- Indian Subcontinent & Bay of Bengal -->
-                <path d="M312 178 L328 176 L340 183 L344 198 L338 214 L323 224 L316 214 L310 198 Z"/>
-                <path d="M328 228 L332 226 L333 232 L329 234 Z"/>
-
-                <!-- Southeast Asia & Malay Archipelago -->
-                <path d="M344 193 L358 190 L368 198 L366 213 L353 220 L342 216 L338 203 Z"/>
-                <path d="M352 222 L364 218 L370 224 L363 231 L352 227 Z"/>
-                <path d="M374 218 L386 215 L391 222 L381 228 Z"/>
-
-                <!-- Australia -->
-                <path d="M360 270 L380 263 L398 268 L406 283 L403 303 L388 316 L368 318 L353 308 L346 293 L350 276 Z"/>
-
-                <!-- East Asia (China, Japan, Korea) -->
-                <path d="M352 153 L375 146 L392 153 L397 168 L389 183 L372 188 L357 183 L349 170 Z"/>
-                <path d="M396 153 L403 146 L410 156 L404 168 L396 163 Z"/>
-
-                <!-- Americas (North & South) -->
-                <path d="M92 128 L118 118 L142 120 L162 130 L175 148 L172 170 L159 186 L142 194 L119 193 L102 180 L89 160 Z"/>
-                <path d="M145 230 L162 223 L177 230 L185 250 L182 276 L169 300 L152 316 L137 313 L127 293 L125 266 Z"/>
-              </g>
-
-              <!-- 3D Specular Lighting & Depth Gradient -->
-              <circle cx="260" cy="260" r="210" fill="url(#globeShine)"/>
-              <circle cx="260" cy="260" r="210" fill="url(#globeShadow)"/>
+            <!-- Lagrangian Current Streamlets (Clipped Inside Sphere) -->
+            <g clip-path="url(#globeClip)" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="8 16" opacity="0.35">
+              <path class="streamlet" d="M260 270 Q300 258 340 276 Q380 294 420 280"/>
+              <path class="streamlet" d="M240 295 Q280 290 320 308 Q360 320 400 315" style="animation-delay:-1.2s;"/>
+              <path class="streamlet" d="M330 235 Q370 248 400 268 Q420 280 440 272" style="animation-delay:-2.1s;"/>
             </g>
+
+            <!-- ─── CONTINENTS: Continuous Repeating Cylindrical Strip (100% Contained) ─── -->
+            <g clip-path="url(#globeClip)">
+              <g class="world-strip-rotator">
+                <!-- Strip Copy 1 -->
+                <g transform="translate(-130.8, 78)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8">
+                  <path d="M399.2,193.3L440.8,167.6L465.3,136.6L519.2,152.1L546.1,201.1L565.7,201.1L543.7,237.2L538.8,270.7L519.2,299.0L502.0,319.6L484.9,322.2L470.2,278.4L460.4,221.7L421.2,221.7Z"/>
+                  <path d="M416.3,139.2L440.8,118.6L465.3,118.6L502.0,128.9L529.0,139.2L551.0,123.7L587.7,116.0L612.2,123.7L626.9,149.5L636.7,175.3L656.3,180.4L666.1,175.3L680.8,195.9L697.9,206.2L710.2,180.4L734.7,149.5L751.8,141.8L759.2,121.2L788.5,116.0L783.6,98.0L832.6,77.3L876.7,61.9L876.7,43.8L783.6,36.1L685.7,33.5L587.7,46.4L526.5,51.6L509.4,49.0L465.3,67.0L453.0,82.5L428.6,103.1L416.3,121.2Z"/>
+                  <path d="M29.4,61.9L73.5,77.3L122.4,92.8L137.1,128.9L154.3,149.5L183.7,175.3L203.3,185.6L220.4,177.9L240.0,172.7L244.9,165.0L257.1,141.8L269.4,118.6L293.9,110.8L306.1,98.0L281.6,77.3L244.9,51.6L195.9,46.4L134.7,51.6L98.0,51.6Z"/>
+                  <path d="M244.9,211.4L269.4,203.6L293.9,206.2L318.4,232.0L355.1,247.5L347.7,270.7L323.3,296.4L298.8,322.2L281.6,348.0L264.5,366.0L257.1,348.0L264.5,322.2L269.4,283.6L249.8,244.9Z"/>
+                  <path d="M717.5,288.7L739.6,278.4L759.2,262.9L788.5,260.4L798.3,281.0L815.5,301.6L808.1,327.4L783.6,330.0L759.2,314.5L722.4,319.6Z"/>
+                  <path d="M330.6,77.3L391.8,51.6L379.6,20.6L318.4,18.0L298.8,38.7Z"/>
+                  <path d="M546.1,262.9L563.2,273.2L558.3,296.4L548.6,283.6Z"/>
+                  <path d="M759.2,149.5L783.6,136.6L795.9,118.6L778.7,139.2L764.1,152.1Z"/>
+                  <path d="M673.4,219.1L729.8,216.5L759.2,234.6L783.6,239.7L754.3,252.6L710.2,252.6L680.8,237.2Z"/>
+                </g>
+                <!-- Strip Copy 2 -->
+                <g transform="translate(750.8, 78)" fill="url(#landGrad)" stroke="rgba(255,255,255,0.65)" stroke-width="0.8">
+                  <path d="M399.2,193.3L440.8,167.6L465.3,136.6L519.2,152.1L546.1,201.1L565.7,201.1L543.7,237.2L538.8,270.7L519.2,299.0L502.0,319.6L484.9,322.2L470.2,278.4L460.4,221.7L421.2,221.7Z"/>
+                  <path d="M416.3,139.2L440.8,118.6L465.3,118.6L502.0,128.9L529.0,139.2L551.0,123.7L587.7,116.0L612.2,123.7L626.9,149.5L636.7,175.3L656.3,180.4L666.1,175.3L680.8,195.9L697.9,206.2L710.2,180.4L734.7,149.5L751.8,141.8L759.2,121.2L788.5,116.0L783.6,98.0L832.6,77.3L876.7,61.9L876.7,43.8L783.6,36.1L685.7,33.5L587.7,46.4L526.5,51.6L509.4,49.0L465.3,67.0L453.0,82.5L428.6,103.1L416.3,121.2Z"/>
+                  <path d="M29.4,61.9L73.5,77.3L122.4,92.8L137.1,128.9L154.3,149.5L183.7,175.3L203.3,185.6L220.4,177.9L240.0,172.7L244.9,165.0L257.1,141.8L269.4,118.6L293.9,110.8L306.1,98.0L281.6,77.3L244.9,51.6L195.9,46.4L134.7,51.6L98.0,51.6Z"/>
+                  <path d="M244.9,211.4L269.4,203.6L293.9,206.2L318.4,232.0L355.1,247.5L347.7,270.7L323.3,296.4L298.8,322.2L281.6,348.0L264.5,366.0L257.1,348.0L264.5,322.2L269.4,283.6L249.8,244.9Z"/>
+                  <path d="M717.5,288.7L739.6,278.4L759.2,262.9L788.5,260.4L798.3,281.0L815.5,301.6L808.1,327.4L783.6,330.0L759.2,314.5L722.4,319.6Z"/>
+                  <path d="M330.6,77.3L391.8,51.6L379.6,20.6L318.4,18.0L298.8,38.7Z"/>
+                  <path d="M546.1,262.9L563.2,273.2L558.3,296.4L548.6,283.6Z"/>
+                  <path d="M759.2,149.5L783.6,136.6L795.9,118.6L778.7,139.2L764.1,152.1Z"/>
+                  <path d="M673.4,219.1L729.8,216.5L759.2,234.6L783.6,239.7L754.3,252.6L710.2,252.6L680.8,237.2Z"/>
+                </g>
+              </g>
+            </g>
+
+            <!-- Latitude/Longitude Curved Graticule -->
+            <g clip-path="url(#globeClip)" opacity="0.22" stroke="#687B8A" stroke-width="0.85" fill="none">
+              <ellipse cx="310" cy="310" rx="232" ry="81"/>
+              <ellipse cx="310" cy="310" rx="232" ry="144"/>
+              <ellipse cx="310" cy="310" rx="232" ry="197"/>
+              <line x1="78" y1="310" x2="542" y2="310" stroke="#687B8A" stroke-width="0.9" opacity="0.4"/>
+              <ellipse cx="310" cy="310" rx="93" ry="232"/>
+              <ellipse cx="310" cy="310" rx="174" ry="232"/>
+            </g>
+
+            <!-- 3D Specular Lighting & Depth Gradient -->
+            <circle cx="310" cy="310" r="232" fill="url(#globeShine)"/>
+            <circle cx="310" cy="310" r="232" fill="url(#globeShadow)"/>
 
             <!-- ═════ LAYER 1: AIS ROUTES + REAL-TIME FLEET ═════ -->
             <g id="layer-ais" class="globe-layer" opacity="1">
               <g clip-path="url(#globeClip)" fill="none">
-                <path d="M298 190 Q325 198 348 202 Q368 208 382 216" stroke="#2563EB" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.75"/>
-                <path d="M290 224 Q318 228 342 232 Q360 236 368 246" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.6"/>
-                <path d="M172 173 Q193 183 218 186 Q238 188 252 186" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.5"/>
-              </g>
-
-              <!-- Satellite Orbital Arc -->
-              <g clip-path="url(#globeClip)" fill="none">
-                <ellipse cx="260" cy="240" rx="205" ry="82" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="7 5" opacity="0.4" transform="rotate(-25 260 240)"/>
+                <path d="M350 220 Q385 230 415 235 Q440 242 458 252" stroke="#2563EB" stroke-width="1.8" stroke-dasharray="5 3" opacity="0.75"/>
+                <path d="M340 260 Q375 265 405 270 Q430 275 440 288" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.6"/>
+                <path d="M200 200 Q225 212 255 216 Q280 218 300 216" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.5"/>
               </g>
 
               <!-- Vessel Blips with Pulse Rings -->
-              <g class="vessel-target" data-name="CMA CGM Mumbai" data-info="Speed: 19.4 kn · AIS: Active" transform="translate(340, 202)" style="cursor:pointer;">
-                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.95" filter="url(#glow-sm)"/>
-                <circle cx="0" cy="0" r="9" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.5"/>
+              <g class="vessel-target" data-name="CMA CGM Mumbai" data-info="Speed: 19.4 kn · AIS: Active" transform="translate(405, 235)" style="cursor:pointer;">
+                <polygon points="0,-8 5,6 0,3.5 -5,6" fill="#2563EB" opacity="0.95" filter="url(#glow-sm)"/>
+                <circle cx="0" cy="0" r="10" fill="none" stroke="#2563EB" stroke-width="0.8" opacity="0.5"/>
               </g>
-              <g class="vessel-target" data-name="Ever Ace" data-info="Speed: 17.8 kn · AIS: Active" transform="translate(230, 190)" style="cursor:pointer;">
-                <polygon points="0,-6 3.5,4.5 0,2.5 -3.5,4.5" fill="#2563EB" opacity="0.8"/>
+              <g class="vessel-target" data-name="Ever Ace" data-info="Speed: 17.8 kn · AIS: Active" transform="translate(275, 220)" style="cursor:pointer;">
+                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.8"/>
               </g>
-              <g class="vessel-target" data-name="MT Ocean Titan" data-info="Speed: 12.1 kn · AIS: Active" transform="translate(305, 222)" style="cursor:pointer;">
-                <polygon points="0,-6 3.5,4.5 0,2.5 -3.5,4.5" fill="#2563EB" opacity="0.8"/>
-              </g>
-
-              <!-- Orbiting Sentinel-1 Satellite Icon -->
-              <g id="satellite-hero" class="vessel-target" data-name="Sentinel-1 SAR" data-info="C-Band Dual-Pol · 10m Res" transform="translate(170, 120)" opacity="0.95" style="cursor:pointer;">
-                <rect x="-9" y="-5" width="18" height="10" rx="2.5" fill="#1A1A1A"/>
-                <rect x="-19" y="-2" width="9" height="4" rx="1" fill="#2563EB" opacity="0.9"/>
-                <rect x="10" y="-2" width="9" height="4" rx="1" fill="#2563EB" opacity="0.9"/>
-                <circle cx="0" cy="0" r="2.5" fill="white"/>
-                <circle cx="0" cy="0" r="1.2" fill="#2563EB"/>
+              <g class="vessel-target" data-name="MT Ocean Titan" data-info="Speed: 12.1 kn · AIS: Active" transform="translate(365, 260)" style="cursor:pointer;">
+                <polygon points="0,-7 4,5 0,3 -4,5" fill="#2563EB" opacity="0.8"/>
               </g>
             </g>
 
@@ -1352,18 +1337,18 @@
             <g id="layer-scan" class="globe-layer" opacity="0">
               <g clip-path="url(#globeClip)">
                 <!-- Phased-Array Radar Wave Rings -->
-                <circle cx="202" cy="145" r="20" class="radar-pulse-ring" fill="none" stroke="#2563EB" stroke-width="1.2"/>
+                <circle cx="240" cy="170" r="22" class="radar-pulse-ring" fill="none" stroke="#2563EB" stroke-width="1.4"/>
                 
                 <!-- Phased-Array Radar Cone -->
-                <path d="M202 145 L155 255 L245 255 Z" fill="url(#beamGrad)" opacity="0.9"/>
-                <line x1="155" y1="255" x2="245" y2="255" stroke="#2563EB" stroke-width="2.2" opacity="0.75" filter="url(#glow-sm)"/>
+                <path d="M240 170 L185 300 L295 300 Z" fill="url(#beamGrad)" opacity="0.9"/>
+                <line x1="185" y1="300" x2="295" y2="300" stroke="#2563EB" stroke-width="2.4" opacity="0.75" filter="url(#glow-sm)"/>
                 
                 <!-- Swath Scan Footprint Grid -->
-                <ellipse cx="200" cy="255" rx="45" ry="12" fill="rgba(37,99,235,0.12)" stroke="#2563EB" stroke-width="0.8" stroke-dasharray="3 2"/>
+                <ellipse cx="240" cy="300" rx="55" ry="14" fill="rgba(37,99,235,0.12)" stroke="#2563EB" stroke-width="0.8" stroke-dasharray="3 2"/>
                 
                 <!-- Discovered Radar Targets -->
-                <circle cx="218" cy="242" r="4.5" fill="#2563EB" opacity="0.9" filter="url(#glow-sm)"/>
-                <circle cx="188" cy="258" r="4" fill="#DC2626" opacity="0.95" filter="url(#glow-red)"/>
+                <circle cx="260" cy="285" r="5" fill="#2563EB" opacity="0.9" filter="url(#glow-sm)"/>
+                <circle cx="225" cy="305" r="4.5" fill="#DC2626" opacity="0.95" filter="url(#glow-red)"/>
               </g>
             </g>
 
@@ -1372,19 +1357,19 @@
               <g clip-path="url(#globeClip)">
                 <!-- Target Reticle & Brackets -->
                 <g class="target-bracket">
-                  <path d="M302 240 L302 232 L310 232" stroke="#DC2626" stroke-width="2.5" fill="none"/>
-                  <path d="M334 232 L342 232 L342 240" stroke="#DC2626" stroke-width="2.5" fill="none"/>
-                  <path d="M302 260 L302 268 L310 268" stroke="#DC2626" stroke-width="2.5" fill="none"/>
-                  <path d="M334 268 L342 268 L342 260" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M360 285 L360 275 L370 275" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M398 275 L408 275 L408 285" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M360 308 L360 318 L370 318" stroke="#DC2626" stroke-width="2.5" fill="none"/>
+                  <path d="M398 318 L408 318 L408 308" stroke="#DC2626" stroke-width="2.5" fill="none"/>
                 </g>
 
                 <!-- Dark Vessel Red Blip -->
-                <circle cx="322" cy="250" r="6" fill="#DC2626" filter="url(#glow-red)"/>
-                <polygon points="322,238 327,252 322,249 317,252" fill="#DC2626"/>
+                <circle cx="384" cy="296" r="7" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="384,282 390,298 384,295 378,298" fill="#DC2626"/>
 
                 <!-- Pulse Rings -->
-                <circle cx="322" cy="250" r="12" fill="none" stroke="#DC2626" stroke-width="1.2" opacity="0.6"/>
-                <circle cx="322" cy="250" r="22" fill="none" stroke="#DC2626" stroke-width="0.8" stroke-dasharray="4 3" opacity="0.35"/>
+                <circle cx="384" cy="296" r="14" fill="none" stroke="#DC2626" stroke-width="1.2" opacity="0.6"/>
+                <circle cx="384" cy="296" r="26" fill="none" stroke="#DC2626" stroke-width="0.8" stroke-dasharray="4 3" opacity="0.35"/>
               </g>
             </g>
 
@@ -1392,17 +1377,17 @@
             <g id="layer-analytics" class="globe-layer" opacity="0">
               <g clip-path="url(#globeClip)" fill="none">
                 <!-- Historical AIS Drift Path (Grey Dashed) -->
-                <path d="M255 190 Q278 208 298 224 Q316 238 322 250" stroke="#737373" stroke-width="2" stroke-dasharray="5 3.5"/>
+                <path d="M305 225 Q332 248 355 268 Q376 284 384 296" stroke="#737373" stroke-width="2" stroke-dasharray="5 3.5"/>
                 <!-- Predicted Drift Trajectory (Blue Vibrant) -->
-                <path d="M322 250 Q332 268 337 284 Q341 300 338 314" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                <path d="M384 296 Q396 318 402 338 Q406 356 403 372" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
                 
                 <!-- Ocean Surface Flow Streamlines -->
                 <g opacity="0.45">
-                  <path d="M245 268 Q260 266 270 270" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
-                  <path d="M295 258 Q308 263 316 272" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                  <path d="M290 318 Q310 316 322 320" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
+                  <path d="M350 306 Q366 312 376 322" stroke="#60A5FA" stroke-width="1.4" marker-end="url(#arrowBlue)"/>
                 </g>
 
-                <circle cx="322" cy="250" r="6.5" fill="#DC2626" filter="url(#glow-red)"/>
+                <circle cx="384" cy="296" r="7.5" fill="#DC2626" filter="url(#glow-red)"/>
               </g>
             </g>
 
@@ -1410,23 +1395,35 @@
             <g id="layer-intercept" class="globe-layer" opacity="0">
               <g clip-path="url(#globeClip)">
                 <!-- Target Ship -->
-                <circle cx="338" cy="310" r="7" fill="#DC2626" filter="url(#glow-red)"/>
-                <polygon points="338,298 343,312 338,309 333,312" fill="#DC2626"/>
+                <circle cx="403" cy="370" r="8" fill="#DC2626" filter="url(#glow-red)"/>
+                <polygon points="403,356 409,372 403,369 397,372" fill="#DC2626"/>
 
                 <!-- Patrol Interceptor Vessel -->
-                <polygon points="288,342 293,356 283,356" fill="#2563EB" filter="url(#glow-sm)"/>
+                <polygon points="345,405 351,421 339,421" fill="#2563EB" filter="url(#glow-sm)"/>
 
                 <!-- Intercept Vectoring Spline -->
-                <path d="M288 348 Q308 340 325 324 Q332 316 338 310" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
+                <path d="M345 412 Q368 402 388 385 Q396 376 403 370" stroke="#2563EB" stroke-width="2.5" stroke-dasharray="6 3" fill="none" marker-end="url(#arrowBlue)" filter="url(#glow-sm)"/>
                 
                 <!-- Crosshair reticle -->
-                <circle cx="338" cy="310" r="16" fill="none" stroke="#2563EB" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
+                <circle cx="403" cy="370" r="18" fill="none" stroke="#2563EB" stroke-width="1" stroke-dasharray="3 2" opacity="0.6"/>
               </g>
             </g>
 
-            <!-- Atmosphere outer ring -->
-            <circle cx="260" cy="260" r="213" fill="none" stroke="rgba(180,195,210,0.4)" stroke-width="2"/>
-            <circle cx="260" cy="260" r="217" fill="none" stroke="rgba(37,99,235,0.12)" stroke-width="4"/>
+            <!-- Tight Sphere Outer Boundary Rims -->
+            <circle cx="310" cy="310" r="232" fill="none" stroke="rgba(100,116,139,0.38)" stroke-width="1.2"/>
+            <circle cx="310" cy="310" r="246" fill="none" stroke="rgba(100,116,139,0.18)" stroke-width="0.8"/>
+
+            <!-- Satellite Orbital Ellipse & Satellite Icon -->
+            <g opacity="0.95">
+              <ellipse cx="310" cy="310" rx="278" ry="144" fill="none" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="6 8" opacity="0.38" transform="rotate(-22 310 310)"/>
+              <g id="satellite-hero" class="vessel-target" data-name="Sentinel-1 SAR" data-info="C-Band Dual-Pol · 10m Res" transform="translate(200, 155)" style="cursor:pointer;">
+                <rect x="-10" y="-6" width="20" height="12" rx="3" fill="#1E293B"/>
+                <rect x="-22" y="-3" width="12" height="6" rx="1" fill="#2563EB" opacity="0.9"/>
+                <rect x="10" y="-3" width="12" height="6" rx="1" fill="#2563EB" opacity="0.9"/>
+                <circle cx="0" cy="0" r="3" fill="white"/>
+                <circle cx="0" cy="0" r="1.5" fill="#2563EB"/>
+              </g>
+            </g>
           </svg>
 
           <!-- Floating HUD Cards -->
@@ -1587,19 +1584,10 @@ heroTl
   .to('#card-ais',    { opacity: 1, scale: 1, y: 0, duration: 0.5, ease: 'back.out(1.6)' }, '-=0.3')
   .to('#globe-status-bar', { opacity: 1, y: 0, duration: 0.4 }, '-=0.2');
 
-// ─── CONTINUOUS 360° EARTH ROTATION ───
-gsap.to('#continents, #globe-grid', {
-  rotation: 360,
-  transformOrigin: '260px 260px',
-  duration: 130,
-  ease: 'none',
-  repeat: -1
-});
-
 // ─── GLOBE SUBTLE FLOATING PULSE ───
 gsap.to('#globe-svg-wrapper', {
-  y: -12,
-  duration: 4.8,
+  y: -10,
+  duration: 5.0,
   ease: 'sine.inOut',
   yoyo: true,
   repeat: -1
@@ -1630,10 +1618,10 @@ function showCard(cardId, statusText) {
 // Cinematic Camera Focal Configurations (Scale + Center Offset)
 const cameraConfigs = {
   1: { scale: 1.0,  x: 0,   y: 0 },
-  2: { scale: 1.12, x: -10, y: -15 },
-  3: { scale: 1.35, x: -35, y: -25 }, // Zoom into Indian Ocean / Arabian Sea
-  4: { scale: 1.42, x: -38, y: -30 }, // Focus on drift corridor
-  5: { scale: 1.50, x: -45, y: -35 }  // Tactical intercept focus
+  2: { scale: 1.08, x: -10, y: -5 },
+  3: { scale: 1.32, x: -35, y: -25 }, // Zoom into Indian Ocean / Arabian Sea
+  4: { scale: 1.45, x: -45, y: -35 }, // Focus on drift corridor
+  5: { scale: 1.60, x: -55, y: -45 }  // Tactical intercept focus
 };
 
 function setGlobeSection(n) {
@@ -1645,7 +1633,7 @@ function setGlobeSection(n) {
     y: cfg.y,
     duration: 1.2,
     ease: 'power3.inOut',
-    transformOrigin: '260px 260px'
+    transformOrigin: '310px 310px'
   });
 
   switch(n) {
